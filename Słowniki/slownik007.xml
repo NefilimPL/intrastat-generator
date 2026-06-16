@@ -1,0 +1,246 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Slownik xmlns="http://www.lodz.uc.gov.pl/PDR/PDR-XML/xsd/SLWw1r0.xsd" Kod="007" Nazwa="Kody krajów" NazwaEN="Country codes" TypKoduPozycji="z2" Publiczny="1" DataEdycji="2007-12-17" Kompletny="1">
+<Pozycja Kod="AD" Opis="Andora" OpisEN="Andorra"/>
+<Pozycja Kod="AE" Opis="Zjednoczone Emiraty Arabskie" OpisEN="United Arab Emirates"/>
+<Pozycja Kod="AF" Opis="Afganistan" OpisEN="Afghanistan"/>
+<Pozycja Kod="AG" Opis="Antigua i Barbuda" OpisEN="Antigua and Barbuda"/>
+<Pozycja Kod="AI" Opis="Anguilla" OpisEN="Anguilla"/>
+<Pozycja Kod="AL" Opis="Albania" OpisEN="Albania"/>
+<Pozycja Kod="AM" Opis="Armenia" OpisEN="Armenia"/>
+<Pozycja Kod="AO" Opis="Angola" OpisEN="Angola"/>
+<Pozycja Kod="AQ" Opis="Antarktyda" OpisEN="Antarctica"/>
+<Pozycja Kod="AR" Opis="Argentyna" OpisEN="Argentina"/>
+<Pozycja Kod="AS" Opis="Samoa Amerykańskie" OpisEN="American Samoa"/>
+<Pozycja Kod="AT" Opis="Austria" OpisEN="Austria"/>
+<Pozycja Kod="AU" Opis="Australia" OpisEN="Australia"/>
+<Pozycja Kod="AW" Opis="Aruba" OpisEN="Aruba"/>
+<Pozycja Kod="AZ" Opis="Azerbejdżan" OpisEN="Azerbaijan"/>
+<Pozycja Kod="BA" Opis="Bośnia i Hercegowina" OpisEN="Bosnia and Herzegovina"/>
+<Pozycja Kod="BB" Opis="Barbados" OpisEN="Barbados"/>
+<Pozycja Kod="BD" Opis="Bangladesz" OpisEN="Bangladesh"/>
+<Pozycja Kod="BE" Opis="Belgia" OpisEN="Belgium"/>
+<Pozycja Kod="BF" Opis="Burkina Faso" OpisEN="Burkina Faso"/>
+<Pozycja Kod="BG" Opis="Bułgaria" OpisEN="Bulgaria"/>
+<Pozycja Kod="BH" Opis="Bahrajn" OpisEN="Bahrain"/>
+<Pozycja Kod="BI" Opis="Burundi" OpisEN="Burundi"/>
+<Pozycja Kod="BJ" Opis="Benin" OpisEN="Benin"/>
+<Pozycja Kod="BL" Opis="Saint-Barthélemy" OpisEN="Saint Barthélemy"/>
+<Pozycja Kod="BM" Opis="Bermudy" OpisEN="Bermuda"/>
+<Pozycja Kod="BN" Opis="Brunei" OpisEN="Brunei Darussalam"/>
+<Pozycja Kod="BO" Opis="Boliwia" OpisEN="Bolivia, Plurinational State of"/>
+<Pozycja Kod="BQ" Opis="Bonaire, Sint Eustatius i Saba" OpisEN="Bonaire, Sint Eustatius and Saba"/>
+<Pozycja Kod="BR" Opis="Brazylia" OpisEN="Brazil"/>
+<Pozycja Kod="BS" Opis="Bahamy" OpisEN="Bahamas"/>
+<Pozycja Kod="BT" Opis="Bhutan" OpisEN="Bhutan"/>
+<Pozycja Kod="BV" Opis="Wyspa Bouveta" OpisEN="Bouvet Island"/>
+<Pozycja Kod="BW" Opis="Botswana" OpisEN="Botswana"/>
+<Pozycja Kod="BY" Opis="Białoruś" OpisEN="Belarus"/>
+<Pozycja Kod="BZ" Opis="Belize" OpisEN="Belize"/>
+<Pozycja Kod="CA" Opis="Kanada" OpisEN="Canada"/>
+<Pozycja Kod="CC" Opis="Wyspy Kokosowe (Wyspy Keelinga)" OpisEN="Cocos Islands (or Keeling Islands)"/>
+<Pozycja Kod="CD" Opis="Demokratyczna Republika Konga" OpisEN="Congo, Democratic Republic of"/>
+<Pozycja Kod="CF" Opis="Republika Środkowoafrykańska" OpisEN="Central African Republic"/>
+<Pozycja Kod="CG" Opis="Kongo" OpisEN="Congo"/>
+<Pozycja Kod="CH" Opis="Szwajcaria" OpisEN="Switzerland"/>
+<Pozycja Kod="CI" Opis="Wybrzeże Kości Słoniowej" OpisEN="Côte d'Ivoire"/>
+<Pozycja Kod="CK" Opis="Wyspy Cooka" OpisEN="Cook Islands"/>
+<Pozycja Kod="CL" Opis="Chile" OpisEN="Chile"/>
+<Pozycja Kod="CM" Opis="Kamerun" OpisEN="Cameroon"/>
+<Pozycja Kod="CN" Opis="Chiny" OpisEN="China"/>
+<Pozycja Kod="CO" Opis="Kolumbia" OpisEN="Colombia"/>
+<Pozycja Kod="CR" Opis="Kostaryka" OpisEN="Costa Rica"/>
+<Pozycja Kod="CU" Opis="Kuba" OpisEN="Cuba"/>
+<Pozycja Kod="CV" Opis="Republika Zielonego Przylądka" OpisEN="Cape Verde"/>
+<Pozycja Kod="CW" Opis="Curaçao" OpisEN="Curaçao"/>
+<Pozycja Kod="CX" Opis="Wyspa Bożego Narodzenia" OpisEN="Christmas Island"/>
+<Pozycja Kod="CY" Opis="Cypr" OpisEN="Cyprus"/>
+<Pozycja Kod="CZ" Opis="Czechy" OpisEN="Czech Republic"/>
+<Pozycja Kod="DE" Opis="Niemcy" OpisEN="Germany"/>
+<Pozycja Kod="DJ" Opis="Dżibuti" OpisEN="Djibouti"/>
+<Pozycja Kod="DK" Opis="Dania" OpisEN="Denmark"/>
+<Pozycja Kod="DM" Opis="Dominika" OpisEN="Dominica"/>
+<Pozycja Kod="DO" Opis="Dominikana" OpisEN="Dominican Republic"/>
+<Pozycja Kod="DZ" Opis="Algieria" OpisEN="Algeria"/>
+<Pozycja Kod="EC" Opis="Ekwador" OpisEN="Ecuador"/>
+<Pozycja Kod="EE" Opis="Estonia" OpisEN="Estonia"/>
+<Pozycja Kod="EG" Opis="Egipt" OpisEN="Egypt"/>
+<Pozycja Kod="EH" Opis="Sahara Zachodnia" OpisEN="Western Sahara"/>
+<Pozycja Kod="ER" Opis="Erytrea" OpisEN="Eritrea"/>
+<Pozycja Kod="ES" Opis="Hiszpania" OpisEN="Spain"/>
+<Pozycja Kod="ET" Opis="Etiopia" OpisEN="Ethiopia"/>
+<Pozycja Kod="FI" Opis="Finlandia" OpisEN="Finland"/>
+<Pozycja Kod="FJ" Opis="Fidżi" OpisEN="Fiji"/>
+<Pozycja Kod="FK" Opis="Falklandy" OpisEN="Falkland Islands"/>
+<Pozycja Kod="FM" Opis="Mikronezja" OpisEN="Micronesia, Federated States of"/>
+<Pozycja Kod="FO" Opis="Wyspy Owcze" OpisEN="Faroe Islands"/>
+<Pozycja Kod="FR" Opis="Francja" OpisEN="France"/>
+<Pozycja Kod="GA" Opis="Gabon" OpisEN="Gabon"/>
+<Pozycja Kod="GB" Opis="Wielka Brytania" OpisEN="United Kingdom"/>
+<Pozycja Kod="GD" Opis="Grenada" OpisEN="Grenada"/>
+<Pozycja Kod="GE" Opis="Gruzja" OpisEN="Georgia"/>
+<Pozycja Kod="GH" Opis="Ghana" OpisEN="Ghana"/>
+<Pozycja Kod="GI" Opis="Gibraltar" OpisEN="Gibraltar"/>
+<Pozycja Kod="GL" Opis="Grenlandia" OpisEN="Greenland"/>
+<Pozycja Kod="GM" Opis="Gambia" OpisEN="Gambia"/>
+<Pozycja Kod="GN" Opis="Gwinea" OpisEN="Guinea"/>
+<Pozycja Kod="GQ" Opis="Gwinea Równikowa" OpisEN="Equatorial Guinea"/>
+<Pozycja Kod="GR" Opis="Grecja" OpisEN="Greece"/>
+<Pozycja Kod="GS" Opis="Georgia Południowa i Sandwich Południowy" OpisEN="South Georgia and South Sandwich"/>
+<Pozycja Kod="GT" Opis="Gwatemala" OpisEN="Guatemala"/>
+<Pozycja Kod="GU" Opis="Guam" OpisEN="Guam"/>
+<Pozycja Kod="GW" Opis="Gwinea Bissau" OpisEN="Guinea-Bissau"/>
+<Pozycja Kod="GY" Opis="Gujana" OpisEN="Guyana"/>
+<Pozycja Kod="HK" Opis="Hongkong" OpisEN="Hong Kong"/>
+<Pozycja Kod="HM" Opis="Wyspy Heard i McDonalda" OpisEN="Heard Island and McDonald Islands"/>
+<Pozycja Kod="HN" Opis="Honduras" OpisEN="Honduras"/>
+<Pozycja Kod="HR" Opis="Chorwacja" OpisEN="Croatia"/>
+<Pozycja Kod="HT" Opis="Haiti" OpisEN="Haiti"/>
+<Pozycja Kod="HU" Opis="Węgry" OpisEN="Hungary"/>
+<Pozycja Kod="ID" Opis="Indonezja" OpisEN="Indonesia"/>
+<Pozycja Kod="IE" Opis="Irlandia" OpisEN="Ireland"/>
+<Pozycja Kod="IL" Opis="Izrael" OpisEN="Israel"/>
+<Pozycja Kod="IN" Opis="Indie" OpisEN="India"/>
+<Pozycja Kod="IO" Opis="Brytyjskie Terytorium Oceanu Indyjs" OpisEN="British Indian Ocean Territory"/>
+<Pozycja Kod="IQ" Opis="Irak" OpisEN="Iraq"/>
+<Pozycja Kod="IR" Opis="Iran" OpisEN="Iran, Islamic Republic of"/>
+<Pozycja Kod="IS" Opis="Islandia" OpisEN="Iceland"/>
+<Pozycja Kod="IT" Opis="Włochy" OpisEN="Italy"/>
+<Pozycja Kod="JM" Opis="Jamajka" OpisEN="Jamaica"/>
+<Pozycja Kod="JO" Opis="Jordania" OpisEN="Jordan"/>
+<Pozycja Kod="JP" Opis="Japonia" OpisEN="Japan"/>
+<Pozycja Kod="KE" Opis="Kenia" OpisEN="Kenya"/>
+<Pozycja Kod="KG" Opis="Kirgistan" OpisEN="Kyrgyz, Republic"/>
+<Pozycja Kod="KH" Opis="Kambodża" OpisEN="Cambodia"/>
+<Pozycja Kod="KI" Opis="Kiribati" OpisEN="Kiribati"/>
+<Pozycja Kod="KM" Opis="Komory" OpisEN="Comoros"/>
+<Pozycja Kod="KN" Opis="Saint Kitts i Nevis" OpisEN="St Kitts and Nevis"/>
+<Pozycja Kod="KP" Opis="Korea Północna" OpisEN="Korea, Democratic People’s Republ"/>
+<Pozycja Kod="KR" Opis="Korea Południowa" OpisEN="Korea, Republic of"/>
+<Pozycja Kod="KW" Opis="Kuwejt" OpisEN="Kuwait"/>
+<Pozycja Kod="KY" Opis="Kajmany" OpisEN="Cayman Islands"/>
+<Pozycja Kod="KZ" Opis="Kazachstan" OpisEN="Kazakhstan"/>
+<Pozycja Kod="LA" Opis="Laos" OpisEN="Lao People’s Democratic Republic"/>
+<Pozycja Kod="LB" Opis="Liban" OpisEN="Lebanon"/>
+<Pozycja Kod="LC" Opis="Saint Lucia" OpisEN="St Lucia"/>
+<Pozycja Kod="LI" Opis="Liechtenstein" OpisEN="Liechtenstein"/>
+<Pozycja Kod="LK" Opis="Sri Lanka" OpisEN="Sri Lanka"/>
+<Pozycja Kod="LR" Opis="Liberia" OpisEN="Liberia"/>
+<Pozycja Kod="LS" Opis="Lesotho" OpisEN="Lesotho"/>
+<Pozycja Kod="LT" Opis="Litwa" OpisEN="Lithuania"/>
+<Pozycja Kod="LU" Opis="Luksemburg" OpisEN="Luxembourg"/>
+<Pozycja Kod="LV" Opis="Łotwa" OpisEN="Latvia"/>
+<Pozycja Kod="LY" Opis="Libia" OpisEN="Libya"/>
+<Pozycja Kod="MA" Opis="Maroko" OpisEN="Morocco"/>
+<Pozycja Kod="MD" Opis="Mołdawia" OpisEN="Moldova, Republic of"/>
+<Pozycja Kod="ME" Opis="Czarnogóra" OpisEN="Montenegro"/>
+<Pozycja Kod="MG" Opis="Madagaskar" OpisEN="Madagascar"/>
+<Pozycja Kod="MH" Opis="Wyspy Marshalla" OpisEN="Marshall Islands"/>
+<Pozycja Kod="MK" Opis="Macedonia Północna" OpisEN="North Macedonia"/>
+<Pozycja Kod="ML" Opis="Mali" OpisEN="Mali"/>
+<Pozycja Kod="MM" Opis="Mjanma" OpisEN="Myanmar"/>
+<Pozycja Kod="MN" Opis="Mongolia" OpisEN="Mongolia"/>
+<Pozycja Kod="MO" Opis="Makau" OpisEN="Macao"/>
+<Pozycja Kod="MP" Opis="Mariany Północne" OpisEN="Northern Mariana Islands"/>
+<Pozycja Kod="MR" Opis="Mauretania" OpisEN="Mauritania"/>
+<Pozycja Kod="MS" Opis="Montserrat" OpisEN="Montserrat"/>
+<Pozycja Kod="MT" Opis="Malta" OpisEN="Malta"/>
+<Pozycja Kod="MU" Opis="Mauritius" OpisEN="Mauritius"/>
+<Pozycja Kod="MV" Opis="Malediwy" OpisEN="Maldives"/>
+<Pozycja Kod="MW" Opis="Malawi" OpisEN="Malawi"/>
+<Pozycja Kod="MX" Opis="Meksyk" OpisEN="Mexico"/>
+<Pozycja Kod="MY" Opis="Malezja" OpisEN="Malaysia"/>
+<Pozycja Kod="MZ" Opis="Mozambik" OpisEN="Mozambique"/>
+<Pozycja Kod="NA" Opis="Namibia" OpisEN="Namibia"/>
+<Pozycja Kod="NC" Opis="Nowa Kaledonia" OpisEN="New Caledonia"/>
+<Pozycja Kod="NE" Opis="Niger" OpisEN="Niger"/>
+<Pozycja Kod="NF" Opis="Norfolk" OpisEN="Norfolk Island"/>
+<Pozycja Kod="NG" Opis="Nigeria" OpisEN="Nigeria"/>
+<Pozycja Kod="NI" Opis="Nikaragua" OpisEN="Nicaragua"/>
+<Pozycja Kod="NL" Opis="Niderlandy" OpisEN="Netherlands"/>
+<Pozycja Kod="NO" Opis="Norwegia" OpisEN="Norway"/>
+<Pozycja Kod="NP" Opis="Nepal" OpisEN="Nepal"/>
+<Pozycja Kod="NR" Opis="Nauru" OpisEN="Nauru"/>
+<Pozycja Kod="NU" Opis="Niue" OpisEN="Niue"/>
+<Pozycja Kod="NZ" Opis="Nowa Zelandia" OpisEN="New Zealand"/>
+<Pozycja Kod="OM" Opis="Oman" OpisEN="Oman"/>
+<Pozycja Kod="PA" Opis="Panama" OpisEN="Panama"/>
+<Pozycja Kod="PE" Opis="Peru" OpisEN="Peru"/>
+<Pozycja Kod="PF" Opis="Polinezja Francuska" OpisEN="French Polynesia"/>
+<Pozycja Kod="PG" Opis="Papua-Nowa Gwinea" OpisEN="Papua New Guinea"/>
+<Pozycja Kod="PH" Opis="Filipiny" OpisEN="Philippines"/>
+<Pozycja Kod="PK" Opis="Pakistan" OpisEN="Pakistan"/>
+<Pozycja Kod="PL" Opis="Polska" OpisEN="Poland"/>
+<Pozycja Kod="PM" Opis="Saint-Pierre i Miquelon" OpisEN="St Pierre and Miquelon"/>
+<Pozycja Kod="PN" Opis="Pitcairn" OpisEN="Pitcairn"/>
+<Pozycja Kod="PS" Opis="Okupowane terytoria palestyńskie" OpisEN="Occupied Palestinian Territory"/>
+<Pozycja Kod="PT" Opis="Portugalia" OpisEN="Portugal"/>
+<Pozycja Kod="PW" Opis="Palau" OpisEN="Palau"/>
+<Pozycja Kod="PY" Opis="Paragwaj" OpisEN="Paraguay"/>
+<Pozycja Kod="QA" Opis="Katar" OpisEN="Qatar"/>
+<Pozycja Kod="QP" Opis="Pełne morze" OpisEN="High seas"/>
+<Pozycja Kod="QQ" Opis="Zapasy i zaopatrzenie" OpisEN="Store and provisions"/>
+<Pozycja Kod="QU" Opis="Kraje i terytoria niewyszczególnione" OpisEN="Countries and territories not speciffied"/>
+<Pozycja Kod="RO" Opis="Rumunia" OpisEN="Romania"/>
+<Pozycja Kod="RU" Opis="Rosja" OpisEN="Russian Federation"/>
+<Pozycja Kod="RW" Opis="Rwanda" OpisEN="Rwanda"/>
+<Pozycja Kod="SA" Opis="Arabia Saudyjska" OpisEN="Saudi Arabia"/>
+<Pozycja Kod="SB" Opis="Wyspy Salomona" OpisEN="Solomon Islands"/>
+<Pozycja Kod="SC" Opis="Seszele" OpisEN="Seychelles"/>
+<Pozycja Kod="SD" Opis="Sudan" OpisEN="Sudan"/>
+<Pozycja Kod="SE" Opis="Szwecja" OpisEN="Sweden"/>
+<Pozycja Kod="SG" Opis="Singapur" OpisEN="Singapore"/>
+<Pozycja Kod="SH" Opis="Wyspa Świętej Heleny, Wyspa Wniebowstąpienia i Tristan" OpisEN="Saint Helena, Ascension and Tristan"/>
+<Pozycja Kod="SI" Opis="Słowenia" OpisEN="Slovenia"/>
+<Pozycja Kod="SK" Opis="Słowacja" OpisEN="Slovakia"/>
+<Pozycja Kod="SL" Opis="Sierra Leone" OpisEN="Sierra Leone"/>
+<Pozycja Kod="SM" Opis="San Marino" OpisEN="San Marino"/>
+<Pozycja Kod="SN" Opis="Senegal" OpisEN="Senegal"/>
+<Pozycja Kod="SO" Opis="Somalia" OpisEN="Somalia"/>
+<Pozycja Kod="SR" Opis="Surinam" OpisEN="Suriname"/>
+<Pozycja Kod="SS" Opis="Sudan Południowy" OpisEN="South Sudan"/>
+<Pozycja Kod="ST" Opis="Wyspy Świętego Tomasza i Książęca" OpisEN="Sao Tome and Principe"/>
+<Pozycja Kod="SV" Opis="Salwador" OpisEN="El Salvador"/>
+<Pozycja Kod="SX" Opis="Sint Maarten (część niderlandzka)" OpisEN="Sint Maarten (Dutch part)"/>
+<Pozycja Kod="SY" Opis="Syria" OpisEN="Syrian Arab Republic"/>
+<Pozycja Kod="SZ" Opis="Estwatini" OpisEN="Swaziland"/>
+<Pozycja Kod="TC" Opis="Turks i Caicos" OpisEN="Turks and Caicos Islands"/>
+<Pozycja Kod="TD" Opis="Czad" OpisEN="Chad"/>
+<Pozycja Kod="TF" Opis="Francuskie Terytoria Południowe" OpisEN="French Southern Territories"/>
+<Pozycja Kod="TG" Opis="Togo" OpisEN="Togo"/>
+<Pozycja Kod="TH" Opis="Tajlandia" OpisEN="Thailand"/>
+<Pozycja Kod="TJ" Opis="Tadżykistan" OpisEN="Tajikistan"/>
+<Pozycja Kod="TK" Opis="Tokelau" OpisEN="Tokelau"/>
+<Pozycja Kod="TL" Opis="Timor Wschodni" OpisEN="Timor-Leste"/>
+<Pozycja Kod="TM" Opis="Turkmenistan" OpisEN="Turkmenistan"/>
+<Pozycja Kod="TN" Opis="Tunezja" OpisEN="Tunisia"/>
+<Pozycja Kod="TO" Opis="Tonga" OpisEN="Tonga"/>
+<Pozycja Kod="TR" Opis="Turcja" OpisEN="Turkey"/>
+<Pozycja Kod="TT" Opis="Trynidad i Tobago" OpisEN="Trinidad and Tobago"/>
+<Pozycja Kod="TV" Opis="Tuvalu" OpisEN="Tuvalu"/>
+<Pozycja Kod="TW" Opis="Tajwan" OpisEN="Taiwan"/>
+<Pozycja Kod="TZ" Opis="Tanzania" OpisEN="Tanzania, United Republic of"/>
+<Pozycja Kod="UA" Opis="Ukraina" OpisEN="Ukraine"/>
+<Pozycja Kod="UG" Opis="Uganda" OpisEN="Uganda"/>
+<Pozycja Kod="UM" Opis="Małe Oddalone Wyspy Stanów Zjednoczonych" OpisEN="United States Minor Outlying Island"/>
+<Pozycja Kod="US" Opis="Stany Zjednoczone" OpisEN="United States"/>
+<Pozycja Kod="UY" Opis="Urugwaj" OpisEN="Uruguay"/>
+<Pozycja Kod="UZ" Opis="Uzbekistan" OpisEN="Uzbekistan"/>
+<Pozycja Kod="VA" Opis="Stolica Apostolska" OpisEN="Holy See (Vatican City State)"/>
+<Pozycja Kod="VC" Opis="Saint Vincent i Grenadyny" OpisEN="St Vincent and the Grenadines"/>
+<Pozycja Kod="VE" Opis="Wenezuela" OpisEN="Venezuela, Bolivarian Republic of"/>
+<Pozycja Kod="VG" Opis="Brytyjskie Wyspy Dziewicze" OpisEN="Virgin Islands, British"/>
+<Pozycja Kod="VI" Opis="Wyspy Dziewicze Stanów Zjednoczonych" OpisEN="Virgin Islands, United States."/>
+<Pozycja Kod="VN" Opis="Wietnam" OpisEN="Viet Nam"/>
+<Pozycja Kod="VU" Opis="Vanuatu" OpisEN="Vanuatu"/>
+<Pozycja Kod="WF" Opis="Wallis i Futuna" OpisEN="Wallis and Futuna"/>
+<Pozycja Kod="WS" Opis="Samoa" OpisEN="Samoa"/>
+<Pozycja Kod="XC" Opis="Ceuta" OpisEN="Ceuta"/>
+<Pozycja Kod="XI" Opis="Zjednoczone Królestwo (Irlandia Północna)" OpisEN="United Kingdom (Northern Ireland)"/>
+<Pozycja Kod="XK" Opis="Kosowo" OpisEN="Kosovo"/>
+<Pozycja Kod="XL" Opis="Melilla" OpisEN="Melilla"/>
+<Pozycja Kod="XS" Opis="Serbia" OpisEN="Serbia"/>
+<Pozycja Kod="YE" Opis="Jemen" OpisEN="Yemen"/>
+<Pozycja Kod="ZA" Opis="Republika Południowej Afryki" OpisEN="South Africa"/>
+<Pozycja Kod="ZM" Opis="Zambia" OpisEN="Zambia"/>
+<Pozycja Kod="ZW" Opis="Zimbabwe" OpisEN="Zimbabwe"/>
+</Slownik>

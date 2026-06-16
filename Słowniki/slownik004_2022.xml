@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Slownik xmlns="http://www.lodz.uc.gov.pl/PDR/PDR-XML/xsd/SLWw1r0.xsd" Kod="004" Nazwa="Kody rodzajów transakcji" NazwaEN="Nature of transaction" TypKoduPozycji="z..2" Publiczny="1" DataEdycji="2022-01-01" Kompletny="1">
+<Pozycja Kod="11" Opis="Bezwarunkowa sprzedaż/kupno z wyłączeniem handlu bezpośredniego z prywatnymi konsumentami/przez prywatnych konsumentów"
+ OpisEN="Outright sale/purchase except direct trade with/by private consumers"/>
+<Pozycja Kod="12" Opis="Handel bezpośredni z prywatnymi konsumentami/przez prywatnych konsumentów (w tym sprzedaż na odległość)"
+ OpisEN="Direct trade with/by private consumers (incl. distance sale)"/>
+<Pozycja Kod="21" Opis="Zwrot towarów"
+ OpisEN="Returned goods"/>
+<Pozycja Kod="22" Opis="Wymiana zwróconych towarów"
+ OpisEN="Replacement for replaced goods"/>
+<Pozycja Kod="23" Opis="Wymiana (np. w ramach gwarancji) towarów, które nie zostały zwrócone"
+ OpisEN="Replacement (e.g. under warranty) for goods not being returned"/>
+<Pozycja Kod="31" Opis="Przemieszczenia do/z magazynu (z wyłączeniem konsygnowania i wysyłki towaru"
+ OpisEN="Movements to/from a warehouse (excluding call-off and consignment stock)"/>
+<Pozycja Kod="32" Opis="Dostawy z zamiarem sprzedaży po zatwierdzeniu lub wypróbowaniu (w tym konsygnowanie i wysyłka towaru)"
+ OpisEN="Supply for sale on approval or after trial (including call-off and consignment stock)"/>
+<Pozycja Kod="33" Opis="Leasing finansowy"
+ OpisEN="Financial leasing"/>
+<Pozycja Kod="34" Opis="Transakcje obejmujące przeniesienie własności bez rekompensaty finansowej"
+ OpisEN="Transactions involving transfer of ownership without financial compensation"/>
+<Pozycja Kod="41" Opis="Transakcje w celu przetwarzania w ramach umowy (nieobejmujące zmiany własności). Towary, które mają wrócić do początkowego państwa członkowskiego/kraju wywozu"
+ OpisEN="Transactions with a view to processing under contract (not involving change of ownership). Goods expected to return to the initial Member State/country of export"/>
+<Pozycja Kod="42" Opis="Transakcje w celu przetwarzania w ramach umowy (nieobejmujące zmiany własności). Towary, które nie mają wrócić do początkowego państwa członkowskiego/kraju wywozu"
+ OpisEN="Transactions with a view to processing under contract (not involving change of ownership). Goods not expected to return to the initial Member State/country of export"/>
+<Pozycja Kod="51" Opis="Transakcje po przetwarzaniu w ramach umowy (nieobejmujące zmiany własności. Towary powracające do początkowego państwa członkowskiego/kraju wywozu"
+ OpisEN="Transactions following processing under contract (not involving change of ownership). Goods returning to the initial Member State/country of export"/>
+<Pozycja Kod="52" Opis="Transakcje po przetwarzaniu w ramach umowy (nieobejmujące zmiany własności. Towary niepowracające do początkowego państwa członkowskiego/kraju wywozu"
+ OpisEN="Transactions following processing under contract (not involving change of ownership). Goods not returning to the initial Member State/country of export"/>
+<Pozycja Kod="61" Opis="Nabycie wewnątrzunijne biokomponentów"
+ OpisEN="Intra-EU acquisition of biocomponents"/>
+<Pozycja Kod="62" Opis="Nabycie wewnątrzunijne biomas"
+ OpisEN="Intra-EU acquisition of biomasses"/>
+<Pozycja Kod="63" Opis="Nabycie wewnątrzunijne biopaliw"
+ OpisEN="Intra-EU acquisition of biofuels"/>
+<Pozycja Kod="71" Opis="Dopuszczenie towarów do obrotu w państwie członkowskim z późniejszym wywozem do innego państwa członkowskiego"
+ OpisEN="Release of goods for free circulation in a Member State with a subsequent export to another Member State"/>
+<Pozycja Kod="72" Opis="Transport towarów z jednego państwa członkowskiego do innego w celu objęcia ich procedurą wywozu"
+ OpisEN="Transportation of goods from one Member State to another Member State to place the goods under the export procedure"/>
+<Pozycja Kod="80" Opis="Transakcje, z którymi związana jest dostawa materiałów budowlanych i wyposażenia technicznego w ramach umowy budowlanej o generalne wykonawstwo lub w zakresie inżynierii lądowej, dla których nie jest wymagane osobne fakturowanie towarów, natomiast wystawiana jest faktura za całą dostawę objętą umową"
+ OpisEN="Transactions involving the supply of building materials and technical equipment under a general construction or civil engineering contract for which no separate invoicing of the goods is required and an invoice for the total contract is issued"/>
+<Pozycja Kod="91" Opis="Wynajem, wypożyczenie i leasing operacyjny dłuższy niż 24 miesiące"
+ OpisEN="Hire, loan, and operational leasing longer than 24 months"/>
+<Pozycja Kod="99" Opis="Inne"
+ OpisEN="Other"/>
+</Slownik>

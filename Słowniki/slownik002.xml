@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Slownik xmlns="http://www.lodz.uc.gov.pl/PDR/PDR-XML/xsd/SLWw1r0.xsd" Kod="002" Nazwa="Symbole warunków dostaw według INCOTERMS 2010" NazwaEN="Delivery terms according to INCOTERMS 2010" TypKoduPozycji="z3" Publiczny="1" DataEdycji="2007-11-28" Kompletny="1">
+<Pozycja Kod="CFR" Opis="koszt i fracht... (oznaczony port przeznaczenia)" OpisEN="Cost and Freight (... named port of destination)"/>
+<Pozycja Kod="CIF" Opis="koszt, ubezpieczenie i fracht... (oznaczony port przeznaczenia)" OpisEN="Cost, Insurance and Freight (... named port of destination)"/>
+<Pozycja Kod="CIP" Opis="przewoźne i ubezpieczenie opłacone do... (oznaczone miejsce przeznaczenia)" OpisEN="Carriage and Insurance Paid To (... named place of destination)"/>
+<Pozycja Kod="CPT" Opis="przewoźne opłacone do... (oznaczone miejsce przeznaczenia)" OpisEN="Carriage Paid To (... named place of destination)"/>
+<Pozycja Kod="DAT" Opis="dostarczony do terminalu" OpisEN="Delivered at Terminal"/>
+<Pozycja Kod="DPU" Opis="dostarczony do miejsca z rozładunkiem" OpisEN="Delivered at place unloaded"/>
+<Pozycja Kod="DAP" Opis="dostarczony do miejsca" OpisEN="Delivered at Place"/>
+<Pozycja Kod="DDP" Opis="dostarczone (cło opłacone)... (oznaczone miejsce przeznaczenia)" OpisEN="Delivered Duty Paid (... named place of destination)"/>
+<Pozycja Kod="EXW" Opis="z zakładu... (oznaczone miejsce)" OpisEN="Ex Works (... locality of works)"/>
+<Pozycja Kod="FAS" Opis="franco wzdłuż burty statku... (oznaczony port załadunku)" OpisEN="Free Alongside Ship (... named port of shipment)"/>
+<Pozycja Kod="FCA" Opis="franco przewoźnik... (oznaczone miejsce)" OpisEN="Free Carrier (... named place)"/>
+<Pozycja Kod="FOB" Opis="franco statek... (oznaczony port załadunku)" OpisEN="Free On Board (... named port of shipment)"/>
+</Slownik>

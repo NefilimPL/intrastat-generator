@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Slownik xmlns="http://www.lodz.uc.gov.pl/PDR/PDR-XML/xsd/SLWw1r0.xsd" Kod="190" Nazwa="Kody towarowe, dla których wartość statystyczna jest wymagana" TypKoduPozycji="z8" Publiczny="1" DataEdycji="2007-07-16" Kompletny="1">
+<Pozycja Kod="99302400" Opis="Zaopatrzenie statków, towary z działów 1-24 CN" WaznyOd="2004-05-01"/>
+<Pozycja Kod="99302700" Opis="Zaopatrzenie statków, towary z działu 27 CN" WaznyOd="2004-05-01"/>
+<Pozycja Kod="99309900" Opis="Zaopatrzenie statków, towary pozostałe" WaznyOd="2004-05-01"/>
+<Pozycja Kod="99312400" Opis="Dostawy na instalacje morskie, towary z działów 1-24 CN" WaznyOd="2005-01-01"/>
+<Pozycja Kod="99312700" Opis="Dostawy na instalacje morskie, towary z działu 27 CN." WaznyOd="2005-01-01"/>
+<Pozycja Kod="99319900" Opis="Dostawy na instalacje morskie, towary pozostałe." WaznyOd="2005-01-01"/>
+</Slownik>

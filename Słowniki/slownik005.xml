@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Slownik xmlns="http://www.lodz.uc.gov.pl/PDR/PDR-XML/xsd/SLWw1r0.xsd" Kod="005" Nazwa="Kody rodzajów transportu" NazwaEN="Modes of transport" TypKoduPozycji="z..2" Publiczny="1" DataEdycji="2007-07-16" Kompletny="1">
+<Pozycja Kod="1" Opis="Transport morski" OpisEN="Sea transport"/>
+<Pozycja Kod="2" Opis="Transport kolejowy" OpisEN="Rail transport"/>
+<Pozycja Kod="3" Opis="Transport drogowy" OpisEN="Road transport"/>
+<Pozycja Kod="4" Opis="Transport lotniczy" OpisEN="Air transport"/>
+<Pozycja Kod="5" Opis="Przesyłki pocztowe" OpisEN="Postal consignment"/>
+<Pozycja Kod="7" Opis="Stałe instalacje przesyłowe (np. gazociągi, wodociągi, ropociągi, koleje linowe itp.)" OpisEN="Fixed transport installations"/>
+<Pozycja Kod="8" Opis="Żegluga śródlądowa" OpisEN="Inland waterway transport"/>
+<Pozycja Kod="9" Opis="Własny napęd (towarem jest np. statek czy samolot poruszający się o własnym napędzie)" OpisEN="Own propulsion"/>
+</Slownik>

@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Slownik xmlns="http://www.lodz.uc.gov.pl/PDR/PDR-XML/xsd/SLWw1r0.xsd" Kod="061" Nazwa="Rodzaje deklaracji statystycznej INTRASTAT" NazwaEN="Types of INTRASTAT declaration" Opis="Słownik dotyczy deklaracji typu Przywóz i Wywóz." OpisEN="This dictionary defiznes declarations with type Arrival and Dispatch." TypKoduPozycji="z1" Publiczny="1" DataEdycji="2007-07-16" Kompletny="1">
+<Pozycja Kod="D" Opis="Zgłoszenie INTRASTAT" OpisEN="INTRASTAT declaration"/>
+<Pozycja Kod="K" Opis="Zamiana zgłoszenia INTRASTAT" OpisEN="Exchange of INTRASTAT declaration"/>
+<Pozycja Kod="P" Opis="Korekta zgłoszenia INTRASTAT" OpisEN="Correction of INTRASTAT declaration"/>
+</Slownik>

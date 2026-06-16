@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Slownik xmlns="http://www.lodz.uc.gov.pl/PDR/PDR-XML/xsd/SLWw1r0.xsd" Kod="191" Nazwa="Kody rodzajów transakcji, dla których wartość statystyczna jest wymagana" TypKoduPozycji="z..2" Publiczny="1" DataEdycji="2007-07-16" Kompletny="1">
+<Pozycja Kod="41" Opis="Dostawa towarów w celu uszlachetniania lub przetwarzania w ramach umowy (kontraktu)" WaznyOd="2005-04-01"/>
+<Pozycja Kod="51" Opis="Dostawa towarów po uszlachetnianiu lub przetworzeniu w ramach umowy (kontraktu)." WaznyOd="2005-04-01"/>
+<Pozycja Kod="42" Opis="Dostawa towarów w celu uszlachetniania lub przetwarzania w ramach umowy (kontraktu)" WaznyOd="2010-03-01"/>
+<Pozycja Kod="52" Opis="Dostawa towarów po uszlachetnianiu lub przetworzeniu w ramach umowy (kontraktu)." WaznyOd="2010-03-01"/>
+</Slownik>

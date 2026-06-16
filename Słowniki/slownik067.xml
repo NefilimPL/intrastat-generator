@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Slownik xmlns="http://www.lodz.uc.gov.pl/PDR/PDR-XML/xsd/SLWw1r0.xsd" Kod="067" Nazwa="Kody urzędów celnych obsługujących deklaracje INTRASTAT" NazwaEN="Codes of customs offices which accept and process INTRASTAT declarations" TypKoduPozycji="z6" Publiczny="1" DataEdycji="2007-07-16" Kompletny="1">
+<Pozycja Kod="300000" Opis="Izba Celna w Białej Podlaskiej" OpisEN="Customs Chamber in Biała Podlaska"/>
+<Pozycja Kod="310000" Opis="Izba Celna w Białymstoku" OpisEN="Customs Chamber in Białystok"/>
+<Pozycja Kod="320000" Opis="Izba Celna w Gdyni" OpisEN="Customs Chamber in Gdynia"/>
+<Pozycja Kod="330000" Opis="Izba Celna w Katowicach" OpisEN="Customs Chamber in Katowice"/>
+<Pozycja Kod="340000" Opis="Izba Celna w Kielcach" OpisEN="Customs Chamber in Kielce"/>
+<Pozycja Kod="350000" Opis="Izba Celna w Krakowie" OpisEN="Customs Chamber in Kraków"/>
+<Pozycja Kod="360000" Opis="Izba Celna w Łodzi" OpisEN="Customs Chamber in Łódź"/>
+<Pozycja Kod="370000" Opis="Izba Celna w Olsztynie" OpisEN="Customs Chamber in Olsztyn"/>
+<Pozycja Kod="380000" Opis="Izba Celna w Opolu" OpisEN="Customs Chamber in Opole"/>
+<Pozycja Kod="390000" Opis="Izba Celna w Poznaniu" OpisEN="Customs Chamber in Poznań"/>
+<Pozycja Kod="400000" Opis="Izba Celna w Przemyślu" OpisEN="Customs Chamber in Przemyśl"/>
+<Pozycja Kod="410000" Opis="Izba Celna w Rzepinie" OpisEN="Customs Chamber in Rzepin"/>
+<Pozycja Kod="420000" Opis="Izba Celna w Szczecinie" OpisEN="Customs Chamber in Szczecin"/>
+<Pozycja Kod="430000" Opis="Izba Celna w Toruniu" OpisEN="Customs Chamber in Toruń"/>
+<Pozycja Kod="440000" Opis="Izba Celna w Warszawie" OpisEN="Customs Chamber in Warszawa"/>
+<Pozycja Kod="450000" Opis="Izba Celna we Wrocławiu" OpisEN="Customs Chamber in Wrocław"/>
+</Slownik>

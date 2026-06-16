@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Slownik xmlns="http://www.lodz.uc.gov.pl/PDR/PDR-XML/xsd/SLWw1r0.xsd" Kod="049" Nazwa="Kody krajów członków Unii Europejskiej." NazwaEN="European Union countries" TypKoduPozycji="z2" Publiczny="1" DataEdycji="2007-07-16" Kompletny="1">
+<Pozycja Kod="AT" Opis="Austria" OpisEN="Austria"/>
+<Pozycja Kod="BE" Opis="Belgia" OpisEN="Belgium"/>
+<Pozycja Kod="BG" Opis="Bułgaria" OpisEN="Bulgaria" WaznyOd="2007-01-01"/>
+<Pozycja Kod="HR" Opis="Chorwacja" OpisEN="Croatia" WaznyOd="2013-07-01"/>
+<Pozycja Kod="CY" Opis="Cypr" OpisEN="Cyprus" WaznyOd="2004-05-01"/>
+<Pozycja Kod="CZ" Opis="Czechy" OpisEN="Czech Republic" WaznyOd="2004-05-01"/>
+<Pozycja Kod="DE" Opis="Niemcy" OpisEN="Germany"/>
+<Pozycja Kod="DK" Opis="Dania" OpisEN="Denmark"/>
+<Pozycja Kod="EE" Opis="Estonia" OpisEN="Estonia" WaznyOd="2004-05-01"/>
+<Pozycja Kod="ES" Opis="Hiszpania" OpisEN="Spain"/>
+<Pozycja Kod="FI" Opis="Finlandia" OpisEN="Finland"/>
+<Pozycja Kod="FR" Opis="Francja" OpisEN="France"/>
+<Pozycja Kod="GB" Opis="Wielka Brytania" OpisEN="United Kingdom"/>
+<Pozycja Kod="GR" Opis="Grecja" OpisEN="Greece"/>
+<Pozycja Kod="HU" Opis="Węgry" OpisEN="Hungary" WaznyOd="2004-05-01"/>
+<Pozycja Kod="IE" Opis="Irlandia" OpisEN="Ireland"/>
+<Pozycja Kod="IT" Opis="Włochy" OpisEN="Italy"/>
+<Pozycja Kod="LT" Opis="Litwa" OpisEN="Lithuania" WaznyOd="2004-05-01"/>
+<Pozycja Kod="LU" Opis="Luksemburg" OpisEN="Luxembourg"/>
+<Pozycja Kod="LV" Opis="Łotwa" OpisEN="Latvia" WaznyOd="2004-05-01"/>
+<Pozycja Kod="MT" Opis="Malta" OpisEN="Malta" WaznyOd="2004-05-01"/>
+<Pozycja Kod="NL" Opis="Niderlandy" OpisEN="Netherlands"/>
+<Pozycja Kod="PL" Opis="Polska" OpisEN="Poland" WaznyOd="2004-05-01"/>
+<Pozycja Kod="PT" Opis="Portugalia" OpisEN="Portugal"/>
+<Pozycja Kod="QR" Opis="Zapasy i zaopatrzenie w ramach handlu wewnątrz Wspólnoty" OpisEN="Stocks and supplies (intracommunity trade)"/>
+<Pozycja Kod="QV" Opis="Kraje i terytoria niewyszczególnione w ramach handlu wewnątrz Wspólnoty" OpisEN="Not specified countries and territories (intracommunity trade)"/>
+<Pozycja Kod="RO" Opis="Rumunia" OpisEN="Romania" WaznyOd="2007-01-01"/>
+<Pozycja Kod="SE" Opis="Szwecja" OpisEN="Sweden"/>
+<Pozycja Kod="SI" Opis="Słowenia" OpisEN="Slovenia" WaznyOd="2004-05-01"/>
+<Pozycja Kod="SK" Opis="Słowacja" OpisEN="Slovakia" WaznyOd="2004-05-01"/>
+<Pozycja Kod="XI" Opis="Zjednoczone Królestwo (Irlandia Północna)" OpisEN="United Kingdom (Northern Ireland)" WaznyOd="2021-01-01"/>
+</Slownik>

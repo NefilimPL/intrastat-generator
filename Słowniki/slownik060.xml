@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Slownik xmlns="http://www.lodz.uc.gov.pl/PDR/PDR-XML/xsd/SLWw1r0.xsd" Kod="060" Nazwa="Typy dokumentów IST (Deklaracja INTRASTAT)" NazwaEN="IST document types (INTRASTAT declaration)" TypKoduPozycji="z1" Publiczny="1" DataEdycji="2007-07-16" Kompletny="1">
+<Pozycja Kod="P" Opis="Przywóz" OpisEN="Arrival"/>
+<Pozycja Kod="W" Opis="Wywóz" OpisEN="Dispatch"/>
+</Slownik>

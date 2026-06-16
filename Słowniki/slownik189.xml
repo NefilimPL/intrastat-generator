@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Slownik xmlns="http://www.lodz.uc.gov.pl/PDR/PDR-XML/xsd/SLWw1r0.xsd" Kod="189" Nazwa="Kody towarowe, dla których nie podaje się wartości statystycznej" TypKoduPozycji="z8" Publiczny="1" DataEdycji="2007-07-16" Kompletny="1">
+<Pozycja Kod="99500000" Opis="Kod służący do łącznej rejestracji obrotu." WaznyOd="2004-05-01"/>
+</Slownik>
