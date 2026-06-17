@@ -20,6 +20,13 @@ python -m intrastat_generator --input intrastat.xml --tariff Taryfa\taryfa.txt -
 Release jest tworzony z tagow `v*`, np. `v3.4.0`.
 Artefakt ma nazwe `Intrastat-Generator_<tag>_Windows_x64.exe`.
 
+Samo utworzenie draft release w GitHub UI nie uruchamia GitHub Actions. Aby
+zbudowac EXE dla drafta:
+
+1. wypchnij tag, np. `git tag v1.0.3` i `git push origin v1.0.3`, albo
+2. uruchom workflow recznie: Actions -> Release -> Run workflow i wpisz
+   `release_tag`, np. `v1.0.3`.
+
 Workflow najpierw sprawdza self-hosted runner `Windows`/`X64`. GitHub wymaga
 uprawnienia `Administration: read` do API listowania runnerow, dlatego dla
 dokladnego fallbacku warto dodac sekret repozytorium `RUNNER_CHECK_TOKEN`

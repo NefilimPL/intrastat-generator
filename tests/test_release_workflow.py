@@ -35,3 +35,29 @@ def test_release_publish_steps_keep_release_as_draft():
     for publish_step in publish_steps:
         step_body = publish_step.split("- name: Upload artifact", 1)[0]
         assert "draft: true" in step_body
+
+
+def test_manual_workflow_accepts_release_tag_input():
+    workflow = release_workflow_text()
+
+    assert "release_tag:" in workflow
+    assert "required: true" in workflow
+    assert "RELEASE_TAG:" in workflow
+
+
+def test_publish_steps_target_selected_release_tag():
+    workflow = release_workflow_text()
+    publish_steps = workflow.split("- name: Publish release")[1:]
+
+    assert publish_steps
+    for publish_step in publish_steps:
+        step_body = publish_step.split("- name: Upload artifact", 1)[0]
+        assert "github.event_name == 'workflow_dispatch'" in step_body
+        assert "tag_name: ${{ env.RELEASE_TAG }}" in step_body
+
+
+def test_build_uses_selected_release_tag_for_version_and_exe_name():
+    workflow = release_workflow_text()
+
+    assert "INTRASTAT_GENERATOR_VERSION: ${{ env.RELEASE_TAG }}" in workflow
+    assert "build_release_exe_name('${{ env.RELEASE_TAG }}')" in workflow
