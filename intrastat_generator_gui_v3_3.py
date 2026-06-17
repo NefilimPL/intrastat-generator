@@ -3,7 +3,11 @@
 """
 Generator XLSX INTRASTAT z GUI.
 
-Założenia wersji v2:
+Założenia wersji v3:
+- Dodano kalkulację wartości statystycznej przez odjęcie kosztu transportu poza Polską według tabeli tras/krajów.
+- Dodano edytor kosztów transportu w GUI, wybór województwa startowego i metody podziału kosztu.
+
+Założenia odziedziczone z wersji v2:
 - Brak cn_overrides.json. Kod CN jest wyznaczany automatycznie z reguł + taryfy + fuzzy.
 - Jeżeli nie da się dobrać kodu z dostępnych pozycji taryfy, komórka CN zostaje pusta i czerwona.
 - Jeżeli wynik jest niepewny, domyślnie 80-89.99%, komórka CN jest żółta.
@@ -13,13 +17,13 @@ Założenia wersji v2:
 - Wynik XLSX jest zapisywany do folderu wygenerowane_xlsx obok programu.
 
 Instalacja:
-    pip install -r requirements_intrastat_generator_v2.txt
+    pip install -r requirements_intrastat_generator_v3.txt
 
 Uruchomienie:
-    python intrastat_generator_gui_v2.py
+    python intrastat_generator_gui_v3.py
 
 Tryb bez GUI:
-    python intrastat_generator_gui_v2.py --input "intrastat.xml" --tariff "taryfa.txt" --no-gui
+    python intrastat_generator_gui_v3.py --input "intrastat.xml" --tariff "taryfa.txt" --no-gui
 """
 
 from __future__ import annotations
@@ -78,27 +82,83 @@ except Exception as exc:
     print("Brak biblioteki openpyxl. Zainstaluj: pip install openpyxl", file=sys.stderr)
     raise exc
 
-APP_NAME = "Generator INTRASTAT XLSX v2"
+APP_NAME = "Generator INTRASTAT XLSX v3.3"
 CONFIG_FILE = "config.json"
 OUTPUT_DIR_NAME = "wygenerowane_xlsx"
 DICT_DIR_NAME = "slowniki"
 LOG_DIR_NAME = "logi"
 
+ROUTE_COSTS_FILE = "koszty_transportu.json"
+
+VOIVODESHIPS = [
+    "dolnośląskie", "kujawsko-pomorskie", "lubelskie", "lubuskie", "łódzkie", "małopolskie",
+    "mazowieckie", "opolskie", "podkarpackie", "podlaskie", "pomorskie", "śląskie",
+    "świętokrzyskie", "warmińsko-mazurskie", "wielkopolskie", "zachodniopomorskie",
+]
+
+# Domyślne kwoty są roboczą tabelą startową do edycji w GUI.
+# Oznaczają SZACOWANY koszt zagranicznego odcinka dla jednego pełnego TIR-a,
+# czyli koszt od granicy Polski do kraju/strefy docelowej. Dla większych krajów
+# warto rozdzielić trasę na część kraju, np. DE_EAST/DE_WEST.
+DEFAULT_ROUTE_COSTS: Dict[str, Any] = {
+    "origin_voivodeship": "podkarpackie",
+    "allocation_basis": "invoice_value",  # mass_net | invoice_value
+    "use_invoice_cap": True,
+    "max_transport_share_pct": 8.0,
+    "routes": [
+        {"active": True, "country": "AT", "zone": "STANDARD", "foreign_cost_pln": 3500, "truck_count": 1, "default": True, "note": "Austria - domyślna robocza stawka"},
+        {"active": True, "country": "BE", "zone": "STANDARD", "foreign_cost_pln": 6500, "truck_count": 1, "default": True, "note": "Belgia - przez DE"},
+        {"active": True, "country": "BG", "zone": "STANDARD", "foreign_cost_pln": 5200, "truck_count": 1, "default": True, "note": "Bułgaria"},
+        {"active": True, "country": "CY", "zone": "STANDARD", "foreign_cost_pln": 12000, "truck_count": 1, "default": True, "note": "Cypr - wymaga ręcznej weryfikacji promu"},
+        {"active": True, "country": "CZ", "zone": "STANDARD", "foreign_cost_pln": 1200, "truck_count": 1, "default": True, "note": "Czechy"},
+        {"active": True, "country": "DE", "zone": "EAST", "foreign_cost_pln": 2200, "truck_count": 1, "default": False, "note": "Niemcy wschód"},
+        {"active": True, "country": "DE", "zone": "CENTER", "foreign_cost_pln": 3800, "truck_count": 1, "default": False, "note": "Niemcy centrum"},
+        {"active": True, "country": "DE", "zone": "WEST", "foreign_cost_pln": 5200, "truck_count": 1, "default": True, "note": "Niemcy zachód - domyślna strefa"},
+        {"active": True, "country": "DE", "zone": "NORTH", "foreign_cost_pln": 4500, "truck_count": 1, "default": False, "note": "Niemcy północ"},
+        {"active": True, "country": "DE", "zone": "SOUTH", "foreign_cost_pln": 4800, "truck_count": 1, "default": False, "note": "Niemcy południe"},
+        {"active": True, "country": "DK", "zone": "STANDARD", "foreign_cost_pln": 5600, "truck_count": 1, "default": True, "note": "Dania"},
+        {"active": True, "country": "EE", "zone": "STANDARD", "foreign_cost_pln": 4500, "truck_count": 1, "default": True, "note": "Estonia"},
+        {"active": True, "country": "ES", "zone": "STANDARD", "foreign_cost_pln": 12500, "truck_count": 1, "default": True, "note": "Hiszpania"},
+        {"active": True, "country": "FI", "zone": "STANDARD", "foreign_cost_pln": 9000, "truck_count": 1, "default": True, "note": "Finlandia"},
+        {"active": True, "country": "FR", "zone": "EAST", "foreign_cost_pln": 8500, "truck_count": 1, "default": True, "note": "Francja wschód"},
+        {"active": True, "country": "FR", "zone": "WEST", "foreign_cost_pln": 11000, "truck_count": 1, "default": False, "note": "Francja zachód"},
+        {"active": True, "country": "FR", "zone": "SOUTH", "foreign_cost_pln": 12500, "truck_count": 1, "default": False, "note": "Francja południe"},
+        {"active": True, "country": "GR", "zone": "STANDARD", "foreign_cost_pln": 11000, "truck_count": 1, "default": True, "note": "Grecja"},
+        {"active": True, "country": "HR", "zone": "STANDARD", "foreign_cost_pln": 5500, "truck_count": 1, "default": True, "note": "Chorwacja"},
+        {"active": True, "country": "HU", "zone": "STANDARD", "foreign_cost_pln": 3500, "truck_count": 1, "default": True, "note": "Węgry"},
+        {"active": True, "country": "IE", "zone": "STANDARD", "foreign_cost_pln": 13000, "truck_count": 1, "default": True, "note": "Irlandia - prom, do weryfikacji"},
+        {"active": True, "country": "IT", "zone": "NORTH", "foreign_cost_pln": 8000, "truck_count": 1, "default": True, "note": "Włochy północ"},
+        {"active": True, "country": "IT", "zone": "CENTER", "foreign_cost_pln": 10000, "truck_count": 1, "default": False, "note": "Włochy centrum"},
+        {"active": True, "country": "IT", "zone": "SOUTH", "foreign_cost_pln": 12500, "truck_count": 1, "default": False, "note": "Włochy południe"},
+        {"active": True, "country": "LT", "zone": "STANDARD", "foreign_cost_pln": 3000, "truck_count": 1, "default": True, "note": "Litwa"},
+        {"active": True, "country": "LU", "zone": "STANDARD", "foreign_cost_pln": 6200, "truck_count": 1, "default": True, "note": "Luksemburg"},
+        {"active": True, "country": "LV", "zone": "STANDARD", "foreign_cost_pln": 4000, "truck_count": 1, "default": True, "note": "Łotwa"},
+        {"active": True, "country": "MT", "zone": "STANDARD", "foreign_cost_pln": 14000, "truck_count": 1, "default": True, "note": "Malta - prom, do weryfikacji"},
+        {"active": True, "country": "NL", "zone": "STANDARD", "foreign_cost_pln": 6200, "truck_count": 1, "default": True, "note": "Holandia - przez DE"},
+        {"active": True, "country": "PT", "zone": "STANDARD", "foreign_cost_pln": 15000, "truck_count": 1, "default": True, "note": "Portugalia"},
+        {"active": True, "country": "RO", "zone": "STANDARD", "foreign_cost_pln": 5200, "truck_count": 1, "default": True, "note": "Rumunia"},
+        {"active": True, "country": "SE", "zone": "STANDARD", "foreign_cost_pln": 8500, "truck_count": 1, "default": True, "note": "Szwecja"},
+        {"active": True, "country": "SI", "zone": "STANDARD", "foreign_cost_pln": 4300, "truck_count": 1, "default": True, "note": "Słowenia"},
+        {"active": True, "country": "SK", "zone": "STANDARD", "foreign_cost_pln": 1500, "truck_count": 1, "default": True, "note": "Słowacja"},
+    ],
+}
+
+
 FORBIDDEN_DESC_CHARS = ["&", '"', "'", "<", ">", ";"]
 
 OUTPUT_COLUMNS = [
-    "Opis towaru",                # A - tekst
-    "Kod kraju",                 # B - tekst
-    "Warunki dostawy",           # C - tekst, opcjonalne
-    "Rodzaj transakcji",         # D - liczba wg instrukcji, ale zapis tekstowy pomaga nie gubić zer
-    "Kod towaru CN",             # E - liczba wg instrukcji, zapis tekstowy chroni format 8 cyfr
-    "Rodzaj transportu",         # F - liczba wg instrukcji, opcjonalne
-    "Kraj pochodzenia",          # G - tekst
-    "Masa netto kg",             # H - liczba całkowita
-    "Ilość w jedn. uzup.",       # I - liczba całkowita/opcjonalna
-    "Wartość fakturowa PLN",     # J - liczba całkowita
-    "Wartość statystyczna PLN",  # K - liczba całkowita/opcjonalna
-    "VAT kontrahenta",           # L - tekst
+    "Opis towaru",                 # A - tekst
+    "Kod kraju",                  # B - tekst
+    "Warunki dostawy",            # C - tekst, opcjonalne
+    "Rodzaj transakcji",          # D - liczba wg instrukcji, ale zapis tekstowy pomaga nie gubić zer
+    "Kod towaru CN",              # E - liczba wg instrukcji, zapis tekstowy chroni format 8 cyfr
+    "Rodzaj transportu",          # F - liczba wg instrukcji, opcjonalne
+    "Kraj pochodzenia",           # G - tekst
+    "Masa netto kg",              # H - liczba całkowita
+    "Ilość w jedn. uzup.",        # I - liczba całkowita/opcjonalna
+    "Wartość fakturowa PLN",      # J - liczba całkowita
+    "Wartość statystyczna PLN",   # K - liczba całkowita/opcjonalna
+    "VAT kontrahenta",            # L - tekst
 ]
 
 DEFAULT_CONFIG: Dict[str, Any] = {
@@ -108,7 +168,12 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "default_delivery_terms": "",
     "default_transaction_type": "11",
     "default_transport_type": "",
-    "statistical_value_mode": "blank",  # blank | copy_invoice_when_required | copy_invoice_always
+    "statistical_value_mode": "blank",  # blank | copy_invoice_when_required | copy_invoice_always | subtract_foreign_transport_by_route
+    "origin_voivodeship": "podkarpackie",
+    "transport_allocation_basis": "invoice_value",  # mass_net | invoice_value
+    "transport_costs_file": ROUTE_COSTS_FILE,
+    "transport_use_invoice_cap": True,
+    "transport_max_share_pct": 8.0,
     "auto_open_output_folder": False,
     "cn_confident_threshold": 90.0,
     "cn_uncertain_threshold": 80.0,
@@ -133,6 +198,23 @@ BORDER_THIN = Border(
     top=Side(style="thin", color="D9E2F3"),
     bottom=Side(style="thin", color="D9E2F3"),
 )
+
+# Rozmiary komentarzy Excela w pikselach. Większe komentarze są istotne,
+# bo służą jako audyt kalkulacji wartości statystycznej.
+COMMENT_WIDTH_HEADER = 420
+COMMENT_HEIGHT_HEADER = 180
+COMMENT_WIDTH_NORMAL = 520
+COMMENT_HEIGHT_NORMAL = 240
+COMMENT_WIDTH_AUDIT = 720
+COMMENT_HEIGHT_AUDIT = 380
+
+
+def make_comment(text: Any, author: str = "Generator", width: int = COMMENT_WIDTH_NORMAL, height: int = COMMENT_HEIGHT_NORMAL) -> Comment:
+    comment = Comment("" if text is None else str(text), author)
+    # openpyxl zapisuje rozmiar komentarza do pliku XLSX; Excel respektuje te wartości jako wielkość dymku.
+    comment.width = int(width)
+    comment.height = int(height)
+    return comment
 
 
 def get_app_dir() -> Path:
@@ -308,6 +390,18 @@ class IntrastatItem:
     statistical_value: Any
     vat_id: str
     attrs: Dict[str, str]
+
+
+@dataclass
+class StatValueResult:
+    value: Any
+    correction: Any
+    route_total_cost: Any
+    share: Any
+    route_name: str
+    method: str
+    note: str
+    status: str = STATUS_OK
 
 
 @dataclass
@@ -613,14 +707,236 @@ class IntrastatXmlParser:
         return ""
 
 
+class RouteCostManager:
+    def __init__(self, path: Path):
+        self.path = path
+
+    @staticmethod
+    def default_config() -> Dict[str, Any]:
+        return json.loads(json.dumps(DEFAULT_ROUTE_COSTS, ensure_ascii=False))
+
+    def load(self) -> Dict[str, Any]:
+        cfg = self.default_config()
+        if self.path.exists():
+            try:
+                with self.path.open("r", encoding="utf-8") as f:
+                    loaded = json.load(f)
+                if isinstance(loaded, dict):
+                    cfg.update({k: v for k, v in loaded.items() if k != "routes"})
+                    if isinstance(loaded.get("routes"), list):
+                        cfg["routes"] = loaded["routes"]
+            except Exception:
+                pass
+        self._normalize(cfg)
+        # Jeżeli plik nie istnieje, zapisz tabelę startową obok programu.
+        if not self.path.exists():
+            self.save(cfg)
+        return cfg
+
+    def save(self, cfg: Dict[str, Any]) -> None:
+        self._normalize(cfg)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("w", encoding="utf-8") as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+
+    @staticmethod
+    def _normalize(cfg: Dict[str, Any]) -> None:
+        cfg["origin_voivodeship"] = norm_text(cfg.get("origin_voivodeship") or "podkarpackie").lower()
+        cfg["allocation_basis"] = norm_text(cfg.get("allocation_basis") or "invoice_value")
+        cfg["use_invoice_cap"] = bool(cfg.get("use_invoice_cap", True))
+        cfg["max_transport_share_pct"] = safe_float(cfg.get("max_transport_share_pct", 8.0), 8.0)
+        if cfg["allocation_basis"] not in {"mass_net", "invoice_value"}:
+            cfg["allocation_basis"] = "mass_net"
+        routes = cfg.get("routes")
+        if not isinstance(routes, list):
+            routes = []
+        normalized: List[Dict[str, Any]] = []
+        for r in routes:
+            if not isinstance(r, dict):
+                continue
+            country = norm_text(r.get("country", "")).upper()
+            if not country:
+                continue
+            zone = norm_text(r.get("zone", "STANDARD")).upper() or "STANDARD"
+            normalized.append({
+                "active": bool(r.get("active", True)),
+                "country": country,
+                "zone": zone,
+                "foreign_cost_pln": safe_float(r.get("foreign_cost_pln", 0.0)),
+                "truck_count": max(0.0, safe_float(r.get("truck_count", 1.0))),
+                "max_correction_pct": safe_float(r.get("max_correction_pct", cfg.get("max_transport_share_pct", 8.0)), safe_float(cfg.get("max_transport_share_pct", 8.0), 8.0)),
+                "default": bool(r.get("default", False)),
+                "note": norm_text(r.get("note", "")),
+            })
+        if not normalized:
+            normalized = RouteCostManager.default_config()["routes"]
+        cfg["routes"] = normalized
+
+    @staticmethod
+    def select_route(route_config: Dict[str, Any], country: str) -> Optional[Dict[str, Any]]:
+        country = norm_text(country).upper()
+        active = [r for r in route_config.get("routes", []) if bool(r.get("active", True)) and norm_text(r.get("country", "")).upper() == country]
+        if not active:
+            return None
+        defaults = [r for r in active if bool(r.get("default", False))]
+        return defaults[0] if defaults else active[0]
+
+
+def safe_float(value: Any, default: float = 0.0) -> float:
+    s = norm_text(value).replace(" ", "").replace(",", ".")
+    if s == "":
+        return default
+    try:
+        return float(s)
+    except Exception:
+        return default
+
+
+def yes_no(value: Any) -> str:
+    return "TAK" if bool(value) else "NIE"
+
+
+def parse_yes_no(value: Any) -> bool:
+    s = norm_text(value).upper()
+    return s in {"TAK", "T", "TRUE", "1", "YES", "Y"}
+
+
+class StatisticalValueCalculator:
+    def __init__(self, config: Dict[str, Any], route_config: Dict[str, Any], declaration_attrs: Dict[str, str]):
+        self.config = config
+        self.route_config = route_config
+        self.declaration_attrs = declaration_attrs
+        self.warnings: List[str] = []
+
+    def calculate(self, items: List[IntrastatItem]) -> Dict[int, StatValueResult]:
+        mode = self.config.get("statistical_value_mode", "blank")
+        if mode != "subtract_foreign_transport_by_route":
+            return {
+                idx: StatValueResult(item.statistical_value, "", "", "", "", f"tryb: {mode}", "")
+                for idx, item in enumerate(items)
+            }
+
+        typ = norm_text(self.declaration_attrs.get("Typ", "")).upper()
+        if typ and typ != "W":
+            self.warnings.append("Tryb odejmowania transportu poza PL jest przygotowany dla wywozu Typ=W. Dla innego typu deklaracji pozostawiono wartości jak z XML/ustawień.")
+            return {
+                idx: StatValueResult(item.statistical_value, "", "", "", "", "tryb kosztowy nieużyty", "Deklaracja nie wygląda na wywóz Typ=W", STATUS_UNCERTAIN)
+                for idx, item in enumerate(items)
+            }
+
+        basis = norm_text(self.route_config.get("allocation_basis") or self.config.get("transport_allocation_basis") or "mass_net")
+        if basis not in {"mass_net", "invoice_value"}:
+            basis = "mass_net"
+
+        selected_routes: Dict[str, Optional[Dict[str, Any]]] = {}
+        group_basis: Dict[str, float] = {}
+        group_invoice: Dict[str, float] = {}
+        for item in items:
+            country = norm_text(item.country).upper()
+            if country not in selected_routes:
+                selected_routes[country] = RouteCostManager.select_route(self.route_config, country)
+            r = selected_routes[country]
+            if not r:
+                continue
+            key = self._route_key(r)
+            group_basis[key] = group_basis.get(key, 0.0) + self._basis_value(item, basis)
+            group_invoice[key] = group_invoice.get(key, 0.0) + max(0.0, safe_float(item.invoice_value, 0.0))
+
+        results: Dict[int, StatValueResult] = {}
+        for idx, item in enumerate(items):
+            invoice = safe_float(item.invoice_value, 0.0)
+            country = norm_text(item.country).upper()
+            route = selected_routes.get(country)
+            if not route:
+                results[idx] = StatValueResult(
+                    value=item.statistical_value if item.statistical_value != "" else item.invoice_value,
+                    correction="",
+                    route_total_cost="",
+                    share="",
+                    route_name=f"{country}: BRAK",
+                    method="brak kosztu trasy - skopiowano fakturę/źródło",
+                    note=f"Brak aktywnej trasy kosztowej dla kraju {country}",
+                    status=STATUS_UNCERTAIN,
+                )
+                self.warnings.append(f"Poz {item.poz_id}: brak aktywnej trasy kosztowej dla kraju {country}")
+                continue
+            key = self._route_key(route)
+            total_basis = group_basis.get(key, 0.0)
+            own_basis = self._basis_value(item, basis)
+            if total_basis <= 0:
+                results[idx] = StatValueResult(
+                    value=item.statistical_value if item.statistical_value != "" else item.invoice_value,
+                    correction="",
+                    route_total_cost="",
+                    share="",
+                    route_name=key,
+                    method="brak podstawy podziału - skopiowano fakturę/źródło",
+                    note="Suma masy/wartości dla grupy wynosi 0",
+                    status=STATUS_UNCERTAIN,
+                )
+                self.warnings.append(f"Poz {item.poz_id}: brak podstawy podziału kosztu dla trasy {key}")
+                continue
+            share = own_basis / total_basis
+            route_cost_one = safe_float(route.get("foreign_cost_pln", 0.0), 0.0)
+            truck_count = max(0.0, safe_float(route.get("truck_count", 1.0), 1.0))
+            route_total_raw = route_cost_one * truck_count
+
+            use_cap = bool(self.route_config.get("use_invoice_cap", self.config.get("transport_use_invoice_cap", True)))
+            global_cap_pct = safe_float(self.route_config.get("max_transport_share_pct", self.config.get("transport_max_share_pct", 8.0)), 8.0)
+            route_cap_pct = safe_float(route.get("max_correction_pct", global_cap_pct), global_cap_pct)
+            invoice_group_total = group_invoice.get(key, 0.0)
+            route_total = route_total_raw
+            capped = False
+            if use_cap and route_cap_pct > 0 and invoice_group_total > 0:
+                route_cap_value = invoice_group_total * route_cap_pct / 100.0
+                if route_total_raw > route_cap_value:
+                    route_total = route_cap_value
+                    capped = True
+
+            correction = route_total * share
+            stat_value = int(round(max(0.0, invoice - correction)))
+            correction_rounded = int(round(correction))
+            method = f"faktura - koszt poza PL; podział: {'masa netto' if basis == 'mass_net' else 'wartość faktury'}; limit grupy: {route_cap_pct:g}% faktur; woj.: {self.route_config.get('origin_voivodeship', '')}"
+            note = norm_text(route.get("note", ""))
+            status = STATUS_OK
+            if capped:
+                note = (note + " | " if note else "") + f"Koszt trasy ograniczony limitem {route_cap_pct:g}% wartości faktur grupy: {route_total_raw:.0f} -> {route_total:.0f} PLN"
+            if correction > invoice and invoice > 0:
+                status = STATUS_UNCERTAIN
+                note = (note + " | " if note else "") + "Korekta większa niż faktura; wynik obcięty do 0"
+            results[idx] = StatValueResult(
+                value=stat_value,
+                correction=correction_rounded,
+                route_total_cost=int(round(route_total)),
+                share=share,
+                route_name=key,
+                method=method,
+                note=note,
+                status=status,
+            )
+        return results
+
+    @staticmethod
+    def _route_key(route: Dict[str, Any]) -> str:
+        return f"{norm_text(route.get('country')).upper()}_{norm_text(route.get('zone') or 'STANDARD').upper()}"
+
+    @staticmethod
+    def _basis_value(item: IntrastatItem, basis: str) -> float:
+        if basis == "invoice_value":
+            return max(0.0, safe_float(item.invoice_value, 0.0))
+        return max(0.0, safe_float(item.mass_net, 0.0))
+
+
 class WorkbookBuilder:
-    def __init__(self, dicts: Dict[str, DictionaryData], tariff_entries: List[TariffEntry], resolver: CnResolver, config: Dict[str, Any]):
+    def __init__(self, dicts: Dict[str, DictionaryData], tariff_entries: List[TariffEntry], resolver: CnResolver, config: Dict[str, Any], route_config: Optional[Dict[str, Any]] = None):
         self.dicts = dicts
         self.tariff_entries = tariff_entries
         self.resolver = resolver
         self.config = config
+        self.route_config = route_config or RouteCostManager.default_config()
         self.decisions: List[Dict[str, Any]] = []
         self.warnings: List[str] = []
+        self.stat_results: Dict[int, StatValueResult] = {}
 
     def build(self, items: List[IntrastatItem], declaration_attrs: Dict[str, str], output_path: Path, progress: Optional[Callable[[int, str], None]] = None) -> None:
         if progress:
@@ -629,9 +945,11 @@ class WorkbookBuilder:
         ws = wb.active
         ws.title = "ISTAT_IMPORT"
 
-        self._write_main_sheet(ws, items, progress)
+        self._write_main_sheet(ws, items, declaration_attrs, progress)
         self._write_control_sheet(wb)
+        self._write_stat_control_sheet(wb, items)
         self._write_settings_sheet(wb, declaration_attrs, output_path)
+        self._write_route_cost_sheet(wb)
         self._write_dictionary_sheets(wb)
         self._write_tariff_sheet(wb)
         self._apply_validations(ws, max(len(items) + 1, 2), wb)
@@ -653,13 +971,22 @@ class WorkbookBuilder:
         if progress:
             progress(100, f"Gotowe: {output_path.name}")
 
-    def _write_main_sheet(self, ws: Any, items: List[IntrastatItem], progress: Optional[Callable[[int, str], None]]) -> None:
+    def _write_main_sheet(self, ws: Any, items: List[IntrastatItem], declaration_attrs: Dict[str, str], progress: Optional[Callable[[int, str], None]]) -> None:
+        """Arkusz importowy ma zawierać tylko kolumny wymagane do importu.
+
+        Dane kontrolne wartości statystycznej są przeniesione do komentarzy komórek K
+        oraz do osobnego arkusza Kontrola_wartosci_stat.
+        """
         ws.append(OUTPUT_COLUMNS)
         for cell in ws[1]:
             cell.fill = FILL_HEADER
             cell.font = FONT_HEADER
             cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
             cell.border = BORDER_THIN
+
+        stat_calc = StatisticalValueCalculator(self.config, self.route_config, declaration_attrs)
+        self.stat_results = stat_calc.calculate(items)
+        self.warnings.extend(stat_calc.warnings)
 
         for idx, item in enumerate(items, start=2):
             cleaned_desc, warn = clean_description(item.opis)
@@ -680,6 +1007,7 @@ class WorkbookBuilder:
                 "Dopasowanie": decision.matched_text,
                 "Uwagi": decision.note,
             })
+            stat = self.stat_results.get(idx - 2, StatValueResult(item.statistical_value, "", "", "", "", "", ""))
             ws.append([
                 cleaned_desc,
                 item.country.upper(),
@@ -691,16 +1019,41 @@ class WorkbookBuilder:
                 item.mass_net,
                 item.supplementary_qty,
                 item.invoice_value,
-                item.statistical_value,
+                stat.value,
                 item.vat_id.upper(),
             ])
+
             cn_cell = ws.cell(row=idx, column=5)
             if decision.status == STATUS_MISSING:
                 cn_cell.fill = FILL_RED
-                cn_cell.comment = Comment(decision.note, "Generator")
+                cn_cell.comment = make_comment(decision.note, width=COMMENT_WIDTH_NORMAL, height=COMMENT_HEIGHT_NORMAL)
             elif decision.status == STATUS_UNCERTAIN:
                 cn_cell.fill = FILL_YELLOW
-                cn_cell.comment = Comment(f"Wynik niepewny: {decision.confidence:.1f}%. {decision.note}", "Generator")
+                cn_cell.comment = make_comment(f"Wynik niepewny: {decision.confidence:.1f}%. {decision.note}", width=COMMENT_WIDTH_NORMAL, height=COMMENT_HEIGHT_NORMAL)
+
+            # Komentarz do wartości statystycznej zawiera szczegóły kalkulacji zamiast osobnych kolumn importowych.
+            stat_cell = ws.cell(row=idx, column=11)
+            stat_comment_lines = []
+            if stat.route_name or stat.correction != "" or stat.method or stat.note:
+                stat_comment_lines.extend([
+                    f"Metoda: {stat.method}",
+                    f"Trasa kosztowa: {stat.route_name}",
+                    f"Korekta transportu PLN: {stat.correction}",
+                    f"Koszt poza PL trasy PLN: {stat.route_total_cost}",
+                    f"Udział w koszcie: {stat.share:.4%}" if isinstance(stat.share, (int, float)) else f"Udział w koszcie: {stat.share}",
+                ])
+                if stat.note:
+                    stat_comment_lines.append(f"Uwagi: {stat.note}")
+                self._append_comment(stat_cell, "\n".join(stat_comment_lines))
+
+            if stat.status == STATUS_UNCERTAIN:
+                stat_cell.fill = FILL_YELLOW
+                self._append_comment(stat_cell, stat.note or "Wartość statystyczna wymaga kontroli")
+
+            # Oznaczanie komórek, w których wartości liczbowe są niższe niż 1.
+            self._mark_less_than_one(ws.cell(row=idx, column=8), "Masa netto kg")
+            self._mark_less_than_one(ws.cell(row=idx, column=10), "Wartość fakturowa PLN")
+            self._mark_less_than_one(ws.cell(row=idx, column=11), "Wartość statystyczna PLN")
 
             if progress and idx % max(1, len(items) // 20 or 1) == 0:
                 percent = 45 + int((idx - 1) / max(len(items), 1) * 25)
@@ -714,7 +1067,7 @@ class WorkbookBuilder:
 
         text_cols = [1, 2, 3, 4, 5, 6, 7, 12]
         int_cols = [8, 9, 10, 11]
-        for row in ws.iter_rows(min_row=2, max_row=len(items) + 1, min_col=1, max_col=12):
+        for row in ws.iter_rows(min_row=2, max_row=len(items) + 1, min_col=1, max_col=len(OUTPUT_COLUMNS)):
             for cell in row:
                 cell.border = BORDER_THIN
                 cell.alignment = Alignment(vertical="top", wrap_text=True)
@@ -724,14 +1077,91 @@ class WorkbookBuilder:
                 row[col - 1].number_format = "0"
 
         if items:
-            table = Table(displayName="TabelaISTATImport", ref=f"A1:L{len(items)+1}")
+            table_ref = f"A1:{get_column_letter(len(OUTPUT_COLUMNS))}{len(items)+1}"
+            table = Table(displayName="TabelaISTATImport", ref=table_ref)
             table.tableStyleInfo = TableStyleInfo(name="TableStyleMedium2", showFirstColumn=False, showLastColumn=False, showRowStripes=True, showColumnStripes=False)
             ws.add_table(table)
 
-        ws["C1"].comment = Comment("Kolumna opcjonalna w Twoim procesie. Ma listę rozwijalną z warunków dostawy, ale może zostać pusta.", "Generator")
-        ws["F1"].comment = Comment("Kolumna opcjonalna w Twoim procesie. Ma listę rozwijalną z rodzajów transportu, ale może zostać pusta.", "Generator")
-        ws["K1"].comment = Comment("Kolumna opcjonalna. Domyślnie pusta, chyba że XML lub ustawienia programu podają wartość.", "Generator")
-        ws["E1"].comment = Comment("Kod CN bez spacji. Puste czerwone = nie znaleziono pewnego kodu. Żółte = wynik niepewny 80-90% albo reguła wymaga kontroli materiału.", "Generator")
+        ws["C1"].comment = make_comment("Kolumna opcjonalna w Twoim procesie. Ma listę rozwijalną z warunków dostawy, ale może zostać pusta.", width=COMMENT_WIDTH_HEADER, height=COMMENT_HEIGHT_HEADER)
+        ws["F1"].comment = make_comment("Kolumna opcjonalna w Twoim procesie. Ma listę rozwijalną z rodzajów transportu, ale może zostać pusta.", width=COMMENT_WIDTH_HEADER, height=COMMENT_HEIGHT_HEADER)
+        ws["K1"].comment = make_comment("Wartość statystyczna. Szczegóły kalkulacji są w komentarzach komórek K oraz w arkuszu Kontrola_wartosci_stat.", width=COMMENT_WIDTH_HEADER, height=COMMENT_HEIGHT_HEADER)
+        ws["E1"].comment = make_comment("Kod CN bez spacji. Puste czerwone = nie znaleziono pewnego kodu. Żółte = wynik niepewny 80-90% albo reguła wymaga kontroli materiału.", width=COMMENT_WIDTH_HEADER, height=COMMENT_HEIGHT_HEADER)
+
+    def _append_comment(self, cell: Any, text: str) -> None:
+        # Zachowujemy podział na linie, bo komentarz służy jako czytelny audyt kalkulacji.
+        text = "" if text is None else str(text)
+        text = text.replace("\r\n", "\n").replace("\r", "\n")
+        text = text.replace(" | ", "\n")
+        lines = [norm_text(line) for line in text.split("\n")]
+        text = "\n".join(line for line in lines if line)
+        if not text:
+            return
+        if cell.comment and cell.comment.text:
+            cell.comment = make_comment(f"{cell.comment.text}\n{text}", width=COMMENT_WIDTH_AUDIT, height=COMMENT_HEIGHT_AUDIT)
+        else:
+            cell.comment = make_comment(text, width=COMMENT_WIDTH_AUDIT, height=COMMENT_HEIGHT_AUDIT)
+
+    def _mark_less_than_one(self, cell: Any, field_name: str) -> None:
+        if cell.value in (None, ""):
+            return
+        try:
+            value = float(str(cell.value).replace(" ", "").replace(",", "."))
+        except Exception:
+            return
+        if value < 1:
+            cell.fill = FILL_RED
+            self._append_comment(cell, f"UWAGA: {field_name} ma wartość niższą niż 1. Sprawdź, czy pozycja nie jest zerowa albo błędnie przeniesiona.")
+
+    def _write_stat_control_sheet(self, wb: Workbook, items: List[IntrastatItem]) -> None:
+        ws = wb.create_sheet("Kontrola_wartosci_stat")
+        headers = [
+            "PozId", "Opis", "Kod kraju", "VAT kontrahenta", "Masa netto kg", "Wartość fakturowa PLN",
+            "Wartość statystyczna PLN", "Korekta transportu PLN", "Koszt poza PL trasy PLN", "Udział w koszcie %",
+            "Trasa kosztowa", "Metoda wartości stat.", "Status", "Uwagi"
+        ]
+        ws.append(headers)
+        for idx, item in enumerate(items):
+            stat = self.stat_results.get(idx, StatValueResult(item.statistical_value, "", "", "", "", "", ""))
+            share_pct = ""
+            if isinstance(stat.share, (int, float)):
+                share_pct = stat.share
+            ws.append([
+                item.poz_id,
+                item.opis,
+                item.country.upper(),
+                item.vat_id.upper(),
+                item.mass_net,
+                item.invoice_value,
+                stat.value,
+                stat.correction,
+                stat.route_total_cost,
+                share_pct,
+                stat.route_name,
+                stat.method,
+                stat.status,
+                stat.note,
+            ])
+        self._style_simple_table(ws, len(items) + 1, len(headers), "TabelaKontrolaWartosciStat")
+        widths = [10, 50, 12, 24, 14, 20, 22, 22, 24, 16, 24, 70, 14, 100]
+        for i, width in enumerate(widths, start=1):
+            ws.column_dimensions[get_column_letter(i)].width = width
+        ws.freeze_panes = "A2"
+        for row in range(2, len(items) + 2):
+            # Kolumny E, F, G: masa/faktura/statystyczna < 1.
+            for col in [5, 6, 7]:
+                cell = ws.cell(row=row, column=col)
+                if cell.value not in (None, ""):
+                    try:
+                        if float(str(cell.value).replace(" ", "").replace(",", ".")) < 1:
+                            cell.fill = FILL_RED
+                    except Exception:
+                        pass
+            if ws.cell(row=row, column=13).value == STATUS_UNCERTAIN:
+                for col in range(1, len(headers) + 1):
+                    if ws.cell(row=row, column=col).fill == FILL_OK:
+                        ws.cell(row=row, column=col).fill = FILL_YELLOW
+        for row in range(2, len(items) + 2):
+            ws.cell(row=row, column=10).number_format = "0.00%"
 
     def _write_control_sheet(self, wb: Workbook) -> None:
         ws = wb.create_sheet("Kontrola_CN")
@@ -766,6 +1196,11 @@ class WorkbookBuilder:
             ["Domyślny rodzaj transakcji", self.config.get("default_transaction_type", "")],
             ["Domyślny rodzaj transportu", self.config.get("default_transport_type", "")],
             ["Tryb wartości statystycznej", self.config.get("statistical_value_mode", "")],
+            ["Województwo startowe transportu", self.route_config.get("origin_voivodeship", self.config.get("origin_voivodeship", ""))],
+            ["Podział kosztu transportu", self.route_config.get("allocation_basis", self.config.get("transport_allocation_basis", ""))],
+            ["Limit kosztu transportu % wartości grupy", self.route_config.get("max_transport_share_pct", self.config.get("transport_max_share_pct", ""))],
+            ["Użyj limitu %", self.route_config.get("use_invoice_cap", self.config.get("transport_use_invoice_cap", True))],
+            ["Tras kosztowych", len(self.route_config.get("routes", []))],
             ["Słowników wczytanych", len(self.dicts)],
             ["Kodów taryfy wczytanych", len(self.tariff_entries)],
             ["Pozycji z pustym CN", sum(1 for d in self.decisions if d.get("Status") == STATUS_MISSING)],
@@ -783,6 +1218,29 @@ class WorkbookBuilder:
         self._style_simple_table(ws, len(rows), 2, "TabelaUstawienia")
         ws.column_dimensions["A"].width = 36
         ws.column_dimensions["B"].width = 96
+
+    def _write_route_cost_sheet(self, wb: Workbook) -> None:
+        ws = wb.create_sheet("Koszty_transportu")
+        ws.append(["Kraj", "Część kraju/strefa", "Koszt poza PL 1 TIR PLN", "Liczba transportów", "Max % faktur", "Domyślna", "Aktywna", "Uwagi"])
+        for r in self.route_config.get("routes", []):
+            ws.append([
+                norm_text(r.get("country", "")).upper(),
+                norm_text(r.get("zone", "STANDARD")).upper(),
+                safe_float(r.get("foreign_cost_pln", 0.0)),
+                safe_float(r.get("truck_count", 1.0)),
+                safe_float(r.get("max_correction_pct", self.route_config.get("max_transport_share_pct", self.config.get("transport_max_share_pct", 8.0))), 8.0),
+                yes_no(r.get("default", False)),
+                yes_no(r.get("active", True)),
+                norm_text(r.get("note", "")),
+            ])
+        self._style_simple_table(ws, max(2, len(self.route_config.get("routes", [])) + 1), 8, "TabelaKosztyTransportu")
+        widths = [10, 20, 24, 18, 14, 12, 12, 70]
+        for i, width in enumerate(widths, start=1):
+            ws.column_dimensions[get_column_letter(i)].width = width
+        ws.freeze_panes = "A2"
+        ws["A1"].comment = make_comment("Tabela kontrolna użyta do wyliczenia wartości statystycznej. Edytuj ją w GUI, nie w arkuszu wynikowym.", width=COMMENT_WIDTH_HEADER, height=COMMENT_HEIGHT_HEADER)
+        ws["E1"].comment = make_comment("Maksymalny koszt transportu użyty w kalkulacji jako procent sumy faktur dla danej grupy kraju/strefy.", width=COMMENT_WIDTH_HEADER, height=COMMENT_HEIGHT_HEADER)
+
 
     def _write_dictionary_sheets(self, wb: Workbook) -> None:
         for code in sorted(self.dicts.keys()):
@@ -880,7 +1338,7 @@ class WorkbookBuilder:
         dv.add(cell_range)
 
     def _finalize_workbook(self, wb: Workbook) -> None:
-        wb.properties.creator = "Generator INTRASTAT XLSX v2"
+        wb.properties.creator = "Generator INTRASTAT XLSX v3"
         wb.properties.title = "INTRASTAT import XLSX"
         wb.properties.subject = "Wygenerowany plik importu ist@t2"
         wb.active = 0
@@ -895,6 +1353,26 @@ class GeneratorService:
 
     def save_config(self) -> None:
         save_json(self.config_path, self.config)
+
+    def route_costs_path(self) -> Path:
+        return resolve_path(self.config.get("transport_costs_file", ROUTE_COSTS_FILE), self.base_dir)
+
+    def load_route_cost_config(self) -> Dict[str, Any]:
+        manager = RouteCostManager(self.route_costs_path())
+        cfg = manager.load()
+        cfg["origin_voivodeship"] = self.config.get("origin_voivodeship", cfg.get("origin_voivodeship", "podkarpackie"))
+        cfg["allocation_basis"] = self.config.get("transport_allocation_basis", cfg.get("allocation_basis", "mass_net"))
+        manager.save(cfg)
+        return cfg
+
+    def save_route_cost_config(self, route_config: Dict[str, Any]) -> None:
+        manager = RouteCostManager(self.route_costs_path())
+        manager.save(route_config)
+        self.config["origin_voivodeship"] = route_config.get("origin_voivodeship", self.config.get("origin_voivodeship", "podkarpackie"))
+        self.config["transport_allocation_basis"] = route_config.get("allocation_basis", self.config.get("transport_allocation_basis", "invoice_value"))
+        self.config["transport_use_invoice_cap"] = bool(route_config.get("use_invoice_cap", self.config.get("transport_use_invoice_cap", True)))
+        self.config["transport_max_share_pct"] = safe_float(route_config.get("max_transport_share_pct", self.config.get("transport_max_share_pct", 8.0)), 8.0)
+        self.save_config()
 
     def guess_tariff_path(self) -> str:
         configured = norm_text(self.config.get("tariff_path", ""))
@@ -953,13 +1431,17 @@ class GeneratorService:
             raise RuntimeError("Nie znaleziono żadnych pozycji <Towar> w XML.")
 
         if progress:
+            progress(38, "Wczytywanie tabeli kosztów transportu...")
+        route_config = self.load_route_cost_config()
+
+        if progress:
             progress(40, "Dobieranie kodów CN...")
         resolver = CnResolver(
             tariff_entries=tariff_entries,
             confident_threshold=float(self.config.get("cn_confident_threshold", 90.0)),
             uncertain_threshold=float(self.config.get("cn_uncertain_threshold", 80.0)),
         )
-        builder = WorkbookBuilder(dicts, tariff_entries, resolver, self.config)
+        builder = WorkbookBuilder(dicts, tariff_entries, resolver, self.config, route_config=route_config)
 
         declaration_no = parser.declaration_attrs.get("NrWlasny", "INTRASTAT") or "INTRASTAT"
         month = parser.declaration_attrs.get("Miesiac", "")
@@ -980,6 +1462,9 @@ class GeneratorService:
             "missing_cn_count": sum(1 for d in builder.decisions if d.get("Status") == STATUS_MISSING),
             "uncertain_cn_count": sum(1 for d in builder.decisions if d.get("Status") == STATUS_UNCERTAIN),
             "output_dir": str(paths["output"]),
+            "statistical_value_mode": self.config.get("statistical_value_mode", ""),
+            "origin_voivodeship": route_config.get("origin_voivodeship", ""),
+            "transport_allocation_basis": route_config.get("allocation_basis", ""),
         }
         if progress:
             progress(100, f"Gotowe. Czas: {elapsed:.2f} s")
@@ -991,6 +1476,7 @@ class App:
         if tk is None:
             raise RuntimeError("Tkinter nie jest dostępny w tym Pythonie.")
         self.service = GeneratorService()
+        self.route_config = self.service.load_route_cost_config()
         base_cls = TkinterDnD.Tk if HAS_DND else tk.Tk
         self.root = base_cls()
         self.root.title(APP_NAME)
@@ -1005,6 +1491,8 @@ class App:
         self.transaction_var = tk.StringVar(value=self.service.config.get("default_transaction_type", "11"))
         self.transport_var = tk.StringVar(value=self.service.config.get("default_transport_type", ""))
         self.stat_mode_var = tk.StringVar(value=self.service.config.get("statistical_value_mode", "blank"))
+        self.origin_var = tk.StringVar(value=self.service.config.get("origin_voivodeship", self.route_config.get("origin_voivodeship", "podkarpackie")))
+        self.allocation_var = tk.StringVar(value=self.service.config.get("transport_allocation_basis", self.route_config.get("allocation_basis", "invoice_value")))
         self.open_folder_var = tk.BooleanVar(value=bool(self.service.config.get("auto_open_output_folder", False)))
         self.hide_dict_var = tk.BooleanVar(value=bool(self.service.config.get("hide_dictionary_sheets", False)))
         self.confident_var = tk.StringVar(value=str(self.service.config.get("cn_confident_threshold", 90.0)))
@@ -1053,11 +1541,17 @@ class App:
         self.transport_combo.grid(row=0, column=5, sticky="ew", **pad)
 
         ttk.Label(options, text="Wartość statystyczna").grid(row=1, column=0, sticky="w", **pad)
-        ttk.Combobox(options, textvariable=self.stat_mode_var, state="readonly", values=["blank", "copy_invoice_when_required", "copy_invoice_always"]).grid(row=1, column=1, columnspan=2, sticky="ew", **pad)
+        ttk.Combobox(options, textvariable=self.stat_mode_var, state="readonly", values=["blank", "copy_invoice_when_required", "copy_invoice_always", "subtract_foreign_transport_by_route"]).grid(row=1, column=1, columnspan=2, sticky="ew", **pad)
 
         ttk.Label(options, text="CN pewny od %").grid(row=1, column=3, sticky="w", **pad)
         ttk.Entry(options, textvariable=self.confident_var, width=10).grid(row=1, column=4, sticky="ew", **pad)
         ttk.Entry(options, textvariable=self.uncertain_var, width=10).grid(row=1, column=5, sticky="ew", **pad)
+
+        ttk.Label(options, text="Województwo startowe").grid(row=2, column=0, sticky="w", **pad)
+        ttk.Combobox(options, textvariable=self.origin_var, values=VOIVODESHIPS, state="normal", width=18).grid(row=2, column=1, sticky="ew", **pad)
+        ttk.Label(options, text="Podział kosztu").grid(row=2, column=2, sticky="w", **pad)
+        ttk.Combobox(options, textvariable=self.allocation_var, values=["mass_net", "invoice_value"], state="readonly", width=14).grid(row=2, column=3, sticky="ew", **pad)
+        ttk.Button(options, text="Edytuj koszty transportu", command=self._open_transport_cost_editor).grid(row=2, column=4, columnspan=2, sticky="ew", **pad)
 
         checks = ttk.Frame(frm)
         checks.pack(fill="x", pady=(0, 10))
@@ -1113,6 +1607,194 @@ class App:
         except Exception:
             pass
 
+    def _open_transport_cost_editor(self) -> None:
+        self._save_options_to_config()
+        self.route_config = self.service.load_route_cost_config()
+
+        win = tk.Toplevel(self.root)
+        win.title("Tabela kosztów transportu poza Polską")
+        win.geometry("1080x680")
+        win.minsize(960, 580)
+        win.transient(self.root)
+
+        top = ttk.Frame(win, padding=10)
+        top.pack(fill="x")
+        ttk.Label(top, text="Województwo startowe").grid(row=0, column=0, sticky="w", padx=6, pady=4)
+        origin_var = tk.StringVar(value=self.route_config.get("origin_voivodeship", self.origin_var.get()))
+        ttk.Combobox(top, textvariable=origin_var, values=VOIVODESHIPS, state="normal", width=22).grid(row=0, column=1, sticky="w", padx=6, pady=4)
+        ttk.Label(top, text="Podział kosztu na pozycje").grid(row=0, column=2, sticky="w", padx=18, pady=4)
+        allocation_var = tk.StringVar(value=self.route_config.get("allocation_basis", self.allocation_var.get()))
+        ttk.Combobox(top, textvariable=allocation_var, values=["mass_net", "invoice_value"], state="readonly", width=16).grid(row=0, column=3, sticky="w", padx=6, pady=4)
+        use_cap_var = tk.StringVar(value=yes_no(self.route_config.get("use_invoice_cap", True)))
+        ttk.Label(top, text="Limit % kosztu").grid(row=0, column=4, sticky="w", padx=18, pady=4)
+        max_share_var = tk.StringVar(value=str(self.route_config.get("max_transport_share_pct", 8.0)))
+        ttk.Entry(top, textvariable=max_share_var, width=8).grid(row=0, column=5, sticky="w", padx=6, pady=4)
+        ttk.Combobox(top, textvariable=use_cap_var, values=["TAK", "NIE"], state="readonly", width=6).grid(row=0, column=6, sticky="w", padx=6, pady=4)
+        ttk.Label(top, text="Koszt = koszt zagranicznego odcinka jednego TIR-a. Limit % zabezpiecza przed potraktowaniem małej wysyłki jako pełnego TIR-a.", wraplength=1000).grid(row=1, column=0, columnspan=7, sticky="w", padx=6, pady=(4, 0))
+
+        tree_frame = ttk.Frame(win, padding=(10, 0, 10, 6))
+        tree_frame.pack(fill="both", expand=True)
+        columns = ("active", "country", "zone", "cost", "trucks", "maxpct", "default", "note")
+        tree = ttk.Treeview(tree_frame, columns=columns, show="headings", selectmode="browse")
+        headers = {
+            "active": "Aktywna",
+            "country": "Kraj",
+            "zone": "Część kraju / strefa",
+            "cost": "Koszt poza PL 1 TIR PLN",
+            "trucks": "Liczba transportów",
+            "maxpct": "Max % faktur",
+            "default": "Domyślna",
+            "note": "Uwagi",
+        }
+        widths = {"active": 80, "country": 70, "zone": 150, "cost": 150, "trucks": 125, "maxpct": 110, "default": 90, "note": 360}
+        for c in columns:
+            tree.heading(c, text=headers[c])
+            tree.column(c, width=widths[c], anchor="w")
+        yscroll = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=yscroll.set)
+        tree.pack(side="left", fill="both", expand=True)
+        yscroll.pack(side="right", fill="y")
+
+        def insert_route(r: Dict[str, Any]) -> None:
+            tree.insert("", "end", values=(
+                yes_no(r.get("active", True)),
+                norm_text(r.get("country", "")).upper(),
+                norm_text(r.get("zone", "STANDARD")).upper(),
+                str(int(round(safe_float(r.get("foreign_cost_pln", 0))))),
+                str(safe_float(r.get("truck_count", 1))),
+                str(safe_float(r.get("max_correction_pct", self.route_config.get("max_transport_share_pct", 8.0)), 8.0)),
+                yes_no(r.get("default", False)),
+                norm_text(r.get("note", "")),
+            ))
+
+        for route in self.route_config.get("routes", []):
+            insert_route(route)
+
+        form = ttk.LabelFrame(win, text="Edycja zaznaczonego wiersza", padding=10)
+        form.pack(fill="x", padx=10, pady=(0, 10))
+        active_var = tk.StringVar(value="TAK")
+        country_var = tk.StringVar()
+        zone_var = tk.StringVar(value="STANDARD")
+        cost_var = tk.StringVar(value="0")
+        trucks_var = tk.StringVar(value="1")
+        max_pct_var = tk.StringVar(value=str(self.route_config.get("max_transport_share_pct", 8.0)))
+        default_var = tk.StringVar(value="NIE")
+        note_var = tk.StringVar()
+        fields = [
+            ("Aktywna", active_var, ["TAK", "NIE"], 0),
+            ("Kraj", country_var, None, 1),
+            ("Strefa", zone_var, None, 2),
+            ("Koszt 1 TIR", cost_var, None, 3),
+            ("Liczba transportów", trucks_var, None, 4),
+            ("Max %", max_pct_var, None, 5),
+            ("Domyślna", default_var, ["TAK", "NIE"], 6),
+        ]
+        for label, var, values, col in fields:
+            ttk.Label(form, text=label).grid(row=0, column=col, sticky="w", padx=5, pady=3)
+            if values:
+                ttk.Combobox(form, textvariable=var, values=values, state="readonly", width=14).grid(row=1, column=col, sticky="ew", padx=5, pady=3)
+            else:
+                ttk.Entry(form, textvariable=var, width=16).grid(row=1, column=col, sticky="ew", padx=5, pady=3)
+        ttk.Label(form, text="Uwagi").grid(row=2, column=0, sticky="w", padx=5, pady=3)
+        ttk.Entry(form, textvariable=note_var).grid(row=3, column=0, columnspan=7, sticky="ew", padx=5, pady=3)
+        for col in range(7):
+            form.columnconfigure(col, weight=1)
+
+        def load_selected(_event: Any = None) -> None:
+            sel = tree.selection()
+            if not sel:
+                return
+            vals = tree.item(sel[0], "values")
+            active_var.set(vals[0])
+            country_var.set(vals[1])
+            zone_var.set(vals[2])
+            cost_var.set(vals[3])
+            trucks_var.set(vals[4])
+            max_pct_var.set(vals[5])
+            default_var.set(vals[6])
+            note_var.set(vals[7])
+
+        def apply_selected() -> None:
+            sel = tree.selection()
+            if not sel:
+                messagebox.showwarning(APP_NAME, "Zaznacz wiersz do edycji.", parent=win)
+                return
+            country = country_var.get().strip().upper()
+            if not country:
+                messagebox.showwarning(APP_NAME, "Kod kraju nie może być pusty.", parent=win)
+                return
+            tree.item(sel[0], values=(
+                active_var.get(),
+                country,
+                zone_var.get().strip().upper() or "STANDARD",
+                str(int(round(safe_float(cost_var.get(), 0)))),
+                str(max(0.0, safe_float(trucks_var.get(), 1))),
+                str(max(0.0, safe_float(max_pct_var.get(), safe_float(max_share_var.get(), 8.0)))),
+                default_var.get(),
+                note_var.get().strip(),
+            ))
+
+        def add_row() -> None:
+            tree.insert("", "end", values=("TAK", "DE", "STANDARD", "0", "1", str(max_share_var.get() or "8"), "NIE", "Nowa trasa"))
+
+        def delete_row() -> None:
+            sel = tree.selection()
+            if not sel:
+                return
+            for item_id in sel:
+                tree.delete(item_id)
+
+        def reset_defaults() -> None:
+            if not messagebox.askyesno(APP_NAME, "Zastąpić całą tabelę domyślną listą krajów/stref?", parent=win):
+                return
+            for item_id in tree.get_children():
+                tree.delete(item_id)
+            for route in RouteCostManager.default_config().get("routes", []):
+                insert_route(route)
+
+        def collect_routes() -> List[Dict[str, Any]]:
+            routes: List[Dict[str, Any]] = []
+            for item_id in tree.get_children():
+                vals = tree.item(item_id, "values")
+                routes.append({
+                    "active": parse_yes_no(vals[0]),
+                    "country": norm_text(vals[1]).upper(),
+                    "zone": norm_text(vals[2]).upper() or "STANDARD",
+                    "foreign_cost_pln": safe_float(vals[3], 0.0),
+                    "truck_count": max(0.0, safe_float(vals[4], 1.0)),
+                    "max_correction_pct": max(0.0, safe_float(vals[5], safe_float(max_share_var.get(), 8.0))),
+                    "default": parse_yes_no(vals[6]),
+                    "note": norm_text(vals[7]),
+                })
+            return routes
+
+        def save_and_close(close: bool = True) -> None:
+            cfg = {
+                "origin_voivodeship": origin_var.get().strip().lower() or "podkarpackie",
+                "allocation_basis": allocation_var.get().strip() or "invoice_value",
+                "use_invoice_cap": parse_yes_no(use_cap_var.get()),
+                "max_transport_share_pct": max(0.0, safe_float(max_share_var.get(), 8.0)),
+                "routes": collect_routes(),
+            }
+            self.service.save_route_cost_config(cfg)
+            self.route_config = self.service.load_route_cost_config()
+            self.origin_var.set(self.route_config.get("origin_voivodeship", "podkarpackie"))
+            self.allocation_var.set(self.route_config.get("allocation_basis", "invoice_value"))
+            self.log("Zapisano tabelę kosztów transportu.")
+            if close:
+                win.destroy()
+
+        tree.bind("<<TreeviewSelect>>", load_selected)
+        buttons = ttk.Frame(win, padding=(10, 0, 10, 10))
+        buttons.pack(fill="x")
+        ttk.Button(buttons, text="Zastosuj zmiany w wierszu", command=apply_selected).pack(side="left", padx=(0, 8))
+        ttk.Button(buttons, text="Dodaj wiersz", command=add_row).pack(side="left", padx=(0, 8))
+        ttk.Button(buttons, text="Usuń wiersz", command=delete_row).pack(side="left", padx=(0, 8))
+        ttk.Button(buttons, text="Przywróć domyślną listę", command=reset_defaults).pack(side="left", padx=(0, 8))
+        ttk.Button(buttons, text="Zapisz", command=lambda: save_and_close(False)).pack(side="right", padx=(8, 0))
+        ttk.Button(buttons, text="Zapisz i zamknij", command=lambda: save_and_close(True)).pack(side="right", padx=(8, 0))
+
+
     def _select_xml(self) -> None:
         p = filedialog.askopenfilename(title="Wybierz XML deklaracji", filetypes=[("XML", "*.xml"), ("Wszystkie pliki", "*.*")])
         if p:
@@ -1144,6 +1826,10 @@ class App:
         self.service.config["default_transaction_type"] = self.transaction_var.get().strip()
         self.service.config["default_transport_type"] = self.transport_var.get().strip()
         self.service.config["statistical_value_mode"] = self.stat_mode_var.get().strip()
+        self.service.config["origin_voivodeship"] = self.origin_var.get().strip().lower() or "podkarpackie"
+        self.service.config["transport_allocation_basis"] = self.allocation_var.get().strip() or "invoice_value"
+        self.service.config["transport_use_invoice_cap"] = bool(self.route_config.get("use_invoice_cap", True))
+        self.service.config["transport_max_share_pct"] = safe_float(self.route_config.get("max_transport_share_pct", 8.0), 8.0)
         self.service.config["auto_open_output_folder"] = bool(self.open_folder_var.get())
         self.service.config["hide_dictionary_sheets"] = bool(self.hide_dict_var.get())
         try:
@@ -1237,11 +1923,15 @@ class App:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Generator XLSX INTRASTAT v2")
+    parser = argparse.ArgumentParser(description="Generator XLSX INTRASTAT v3")
     parser.add_argument("--input", help="Ścieżka do XML deklaracji")
     parser.add_argument("--tariff", help="Ścieżka do taryfa.txt")
     parser.add_argument("--dict-dir", help="Folder ze słownikami XML slownik*.xml")
     parser.add_argument("--output-dir", help="Folder wynikowy")
+    parser.add_argument("--route-costs", help="Plik JSON z kosztami transportu poza PL")
+    parser.add_argument("--stat-mode", choices=["blank", "copy_invoice_when_required", "copy_invoice_always", "subtract_foreign_transport_by_route"], help="Tryb wartości statystycznej")
+    parser.add_argument("--origin-voivodeship", help="Województwo startowe transportu")
+    parser.add_argument("--allocation-basis", choices=["mass_net", "invoice_value"], help="Podział kosztu transportu na pozycje")
     parser.add_argument("--no-gui", action="store_true", help="Uruchom bez GUI")
     args = parser.parse_args()
 
@@ -1250,6 +1940,14 @@ def main() -> int:
         service.config["dict_dir"] = args.dict_dir
     if args.output_dir:
         service.config["output_dir"] = args.output_dir
+    if args.route_costs:
+        service.config["transport_costs_file"] = args.route_costs
+    if args.stat_mode:
+        service.config["statistical_value_mode"] = args.stat_mode
+    if args.origin_voivodeship:
+        service.config["origin_voivodeship"] = args.origin_voivodeship.strip().lower()
+    if args.allocation_basis:
+        service.config["transport_allocation_basis"] = args.allocation_basis
     if args.tariff:
         service.config["tariff_path"] = args.tariff
     service.save_config()
