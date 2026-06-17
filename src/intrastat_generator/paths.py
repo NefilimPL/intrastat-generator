@@ -11,7 +11,13 @@ from .naming import now_stamp
 def get_app_dir() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
-    return Path(__file__).resolve().parent
+    module_path = Path(__file__).resolve()
+    package_dir = module_path.parent
+    for parent in module_path.parents:
+        source_package_dir = parent / "src" / "intrastat_generator"
+        if source_package_dir.resolve() == package_dir:
+            return parent
+    return package_dir
 
 
 def resolve_path(value: str | Path, base_dir: Path) -> Path:
