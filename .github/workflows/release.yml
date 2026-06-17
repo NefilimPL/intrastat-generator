@@ -42,9 +42,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Select existing Python
-        shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
+          Write-Host "PowerShell edition: $($PSVersionTable.PSEdition)"
+          Write-Host "PowerShell version: $($PSVersionTable.PSVersion)"
           $candidates = @()
           $pyLauncher = Get-Command py -ErrorAction SilentlyContinue
           if ($pyLauncher) {
@@ -73,16 +74,13 @@ jobs:
           }
           throw "Python 3.11 or newer with Tkinter is required on the self-hosted runner. Install it and add it to PATH."
       - name: Install dependencies
-        shell: pwsh
         run: |
           & "$env:PYTHON_EXE" -m pip install --upgrade pip
           & "$env:PYTHON_EXE" -m pip install -r requirements-dev.txt
           & "$env:PYTHON_EXE" -m pip install -e .
       - name: Run tests
-        shell: pwsh
         run: '& "$env:PYTHON_EXE" -m pytest'
       - name: Build EXE
-        shell: pwsh
         run: |
           & "$env:PYTHON_EXE" -m PyInstaller --onefile --windowed --name intrastat-generator --paths src src/intrastat_generator/__main__.py
           & "$env:PYTHON_EXE" -c "from pathlib import Path; from intrastat_generator.naming import build_release_exe_name; Path('dist/intrastat-generator.exe').rename(Path('dist') / build_release_exe_name('${{ github.ref_name }}'))"

@@ -55,6 +55,9 @@ def test_self_hosted_build_uses_existing_python_instead_of_setup_python():
     assert "- name: Select existing Python" in self_hosted
     assert "PYTHON_EXE" in self_hosted
     assert "import sys, tkinter" in self_hosted
+    assert "shell: pwsh" not in self_hosted
+    assert "shell: powershell" not in self_hosted
+    assert "PowerShell edition" in self_hosted
 
 
 def test_github_hosted_build_uses_node24_compatible_setup_python():
