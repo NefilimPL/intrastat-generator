@@ -51,7 +51,14 @@ jobs:
         run: |
           python -m PyInstaller --onefile --windowed --name intrastat-generator --paths src src/intrastat_generator/__main__.py
           python -c "from pathlib import Path; from intrastat_generator.naming import build_release_exe_name; Path('dist/intrastat-generator.exe').rename(Path('dist') / build_release_exe_name('${{ github.ref_name }}'))"
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Intrastat-Generator_*_Windows_x64.exe
+          generate_release_notes: true
       - name: Upload artifact
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: intrastat-generator-windows-x64
@@ -81,25 +88,15 @@ jobs:
         run: |
           python -m PyInstaller --onefile --windowed --name intrastat-generator --paths src src/intrastat_generator/__main__.py
           python -c "from pathlib import Path; from intrastat_generator.naming import build_release_exe_name; Path('dist/intrastat-generator.exe').rename(Path('dist') / build_release_exe_name('${{ github.ref_name }}'))"
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Intrastat-Generator_*_Windows_x64.exe
+          generate_release_notes: true
       - name: Upload artifact
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: intrastat-generator-windows-x64
           path: dist/Intrastat-Generator_*_Windows_x64.exe
-
-  publish-release:
-    name: Publish GitHub Release
-    needs: [build-self-hosted, build-github-hosted]
-    if: always() && (needs.build-self-hosted.result == 'success' || needs.build-github-hosted.result == 'success')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: intrastat-generator-windows-x64
-          path: release-artifacts
-      - name: Publish release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: release-artifacts/Intrastat-Generator_*_Windows_x64.exe
-          generate_release_notes: true

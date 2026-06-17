@@ -29,3 +29,7 @@ Jesli sekret nie jest ustawiony albo API zwroci 403, workflow nie przerywa
 release i wybiera self-hosted-first scheduling. Przy aktywnym runnerze build
 trafi na self-hosted; przy braku runnera dokladny fallback na `windows-latest`
 wymaga `RUNNER_CHECK_TOKEN`.
+
+Publikacja GitHub Release uzywa pliku EXE bezposrednio z joba build. Upload do
+Actions artifacts jest opcjonalny i nie blokuje release, szczegolnie na
+self-hosted runnerze.
