@@ -33,3 +33,13 @@ wymaga `RUNNER_CHECK_TOKEN`.
 Publikacja GitHub Release uzywa pliku EXE bezposrednio z joba build. Upload do
 Actions artifacts jest opcjonalny i nie blokuje release, szczegolnie na
 self-hosted runnerze.
+
+Release jest tworzony jako draft (`draft: true`), zeby EXE byl dodany przed
+upublicznieniem. Przy ochronie przed edycja opublikowanych release'ow nalezy
+najpierw pozwolic workflow utworzyc lub uzupelnic draft, a dopiero potem
+opublikowac go recznie w GitHub.
+
+Do tworzenia draft release i dodawania EXE wystarcza standardowy `GITHUB_TOKEN`
+z `contents: write`, o ile ustawienia repozytorium pozwalaja GitHub Actions
+zapisywac w repo. Dodatkowy fine-grained PAT jest potrzebny tylko do dokladnego
+sprawdzania self-hosted runnerow przez API (`RUNNER_CHECK_TOKEN`).

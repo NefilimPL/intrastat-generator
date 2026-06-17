@@ -25,3 +25,13 @@ def test_release_publish_does_not_require_actions_artifact_download():
     workflow = release_workflow_text()
 
     assert "actions/download-artifact" not in workflow
+
+
+def test_release_publish_steps_keep_release_as_draft():
+    workflow = release_workflow_text()
+    publish_steps = workflow.split("- name: Publish release")[1:]
+
+    assert publish_steps
+    for publish_step in publish_steps:
+        step_body = publish_step.split("- name: Upload artifact", 1)[0]
+        assert "draft: true" in step_body
