@@ -11,3 +11,4 @@ O = poprawić wykrywanie lokalizacji słowników i taryf na czyli zamiast folder
 O = plik exe nie zapisuje do folderu przy pierwszym uruchomieniu do odpowiednich folderów taryfy i słowników (domyślnie jest tylko folder słowniki) fajnie jak by te pliki były dodawane wraz z plikiem exe i wykrywało czy istnieją jakieś pliki jeżeli tak to niech nie podmienia tylko używa istniejących.
 O = exeption catcher
 O = testy GUI, test wydajnościi i kodu python + testy zainstalowanych modówłów wymaganych do utworzenia pliku exe które maja się dziać przed samym utworzeniem pliku exe (użycie kilku self runnerów do przyśpieszenia jeżeli możliwe z pominięciem runnera githubowego do testów tylko self hosted)
+O = obsługa błędów związanych z tym że np ktoś skopiował folder z wszsytkimi plikami w tym config.json które powoduje błędne uruchamianie programu
