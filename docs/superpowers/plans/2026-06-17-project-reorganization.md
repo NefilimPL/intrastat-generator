@@ -567,10 +567,38 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
+  check-self-hosted:
+    name: Check self-hosted runner availability
+    runs-on: ubuntu-latest
+    outputs:
+      available: ${{ steps.check.outputs.available }}
+    steps:
+      - name: Check repository runners
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        shell: pwsh
+        run: |
+          $response = gh api "repos/$env:REPOSITORY/actions/runners?per_page=100" | ConvertFrom-Json
+          $available = $false
+          foreach ($runner in $response.runners) {
+            $labels = @($runner.labels | ForEach-Object { $_.name })
+            $hasLabels = $labels -contains "self-hosted" -and $labels -contains "Windows" -and $labels -contains "X64"
+            if ($runner.status -eq "online" -and -not $runner.busy -and $hasLabels) {
+              $available = $true
+              break
+            }
+          }
+          "available=$($available.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
   build-self-hosted:
     name: Build on self-hosted Windows runner
+    needs: check-self-hosted
+    if: needs.check-self-hosted.outputs.available == 'true'
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 30
     env:
@@ -584,11 +612,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
+          python -m pip install -e .
       - name: Run tests
         run: python -m pytest
       - name: Build EXE
         run: |
-          python -m PyInstaller --onefile --windowed --name intrastat-generator src/intrastat_generator/__main__.py
+          python -m PyInstaller --onefile --windowed --name intrastat-generator --paths src src/intrastat_generator/__main__.py
           python -c "from pathlib import Path; from intrastat_generator.naming import build_release_exe_name; Path('dist/intrastat-generator.exe').rename(Path('dist') / build_release_exe_name('${{ github.ref_name }}'))"
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -598,8 +627,8 @@ jobs:
 
   build-github-hosted:
     name: Build on GitHub-hosted Windows runner
-    needs: build-self-hosted
-    if: always() && needs.build-self-hosted.result != 'success'
+    needs: [check-self-hosted, build-self-hosted]
+    if: always() && (needs.check-self-hosted.outputs.available != 'true' || needs.build-self-hosted.result == 'failure' || needs.build-self-hosted.result == 'cancelled')
     runs-on: windows-latest
     timeout-minutes: 30
     env:
@@ -613,11 +642,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
+          python -m pip install -e .
       - name: Run tests
         run: python -m pytest
       - name: Build EXE
         run: |
-          python -m PyInstaller --onefile --windowed --name intrastat-generator src/intrastat_generator/__main__.py
+          python -m PyInstaller --onefile --windowed --name intrastat-generator --paths src src/intrastat_generator/__main__.py
           python -c "from pathlib import Path; from intrastat_generator.naming import build_release_exe_name; Path('dist/intrastat-generator.exe').rename(Path('dist') / build_release_exe_name('${{ github.ref_name }}'))"
       - name: Upload artifact
         uses: actions/upload-artifact@v4

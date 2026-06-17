@@ -167,9 +167,10 @@ Trigger:
 
 Runner behavior:
 
-1. A Windows self-hosted runner job is attempted first with labels `self-hosted`, `Windows`, and `X64`.
-2. The GitHub-hosted fallback job uses `windows-latest`.
-3. The fallback job runs only if the self-hosted job does not complete successfully.
+1. A lightweight preflight job runs on `ubuntu-latest` and checks repository self-hosted runners through the GitHub API.
+2. If an online, non-busy runner with labels `self-hosted`, `Windows`, and `X64` is available, the Windows build runs on that self-hosted runner.
+3. If no matching runner is available, the Windows build runs on `windows-latest`.
+4. If the self-hosted build is selected but fails, a GitHub-hosted retry job runs on `windows-latest`.
 
 Build behavior:
 
@@ -180,7 +181,7 @@ Build behavior:
 - Rename the output to `Intrastat-Generator_<tag>_Windows_x64.exe`.
 - Publish the EXE to the GitHub Release for the tag.
 
-The workflow cannot truly detect an offline self-hosted runner before GitHub schedules the job, because GitHub Actions evaluates runner availability at scheduling time. The practical implementation is to define the self-hosted job first and gate the fallback job with `needs` plus `if: always() && needs.<job>.result != 'success'`.
+This preflight does not build anything on GitHub-hosted infrastructure before checking self-hosted availability. It only queries runner status so the build can avoid being stuck behind an unavailable self-hosted runner.
 
 ## Gitignore Requirements
 
