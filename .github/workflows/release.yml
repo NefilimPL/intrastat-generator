@@ -16,30 +16,21 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       available: ${{ steps.check.outputs.available }}
+      checked: ${{ steps.check.outputs.checked }}
+      reason: ${{ steps.check.outputs.reason }}
     steps:
+      - uses: actions/checkout@v4
       - name: Check repository runners
         id: check
         env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-        shell: pwsh
-        run: |
-          $response = gh api "repos/$env:REPOSITORY/actions/runners?per_page=100" | ConvertFrom-Json
-          $available = $false
-          foreach ($runner in $response.runners) {
-            $labels = @($runner.labels | ForEach-Object { $_.name })
-            $hasLabels = $labels -contains "self-hosted" -and $labels -contains "Windows" -and $labels -contains "X64"
-            if ($runner.status -eq "online" -and -not $runner.busy -and $hasLabels) {
-              $available = $true
-              break
-            }
-          }
-          "available=$($available.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          GITHUB_TOKEN: ${{ github.token }}
+          RUNNER_CHECK_TOKEN: ${{ secrets.RUNNER_CHECK_TOKEN }}
+        run: python .github/scripts/check_self_hosted_runner.py
 
   build-self-hosted:
     name: Build on self-hosted Windows runner
     needs: check-self-hosted
-    if: needs.check-self-hosted.outputs.available == 'true'
+    if: needs.check-self-hosted.outputs.available != 'false'
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 30
     env:
@@ -69,7 +60,7 @@ jobs:
   build-github-hosted:
     name: Build on GitHub-hosted Windows runner
     needs: [check-self-hosted, build-self-hosted]
-    if: always() && (needs.check-self-hosted.outputs.available != 'true' || needs.build-self-hosted.result == 'failure' || needs.build-self-hosted.result == 'cancelled')
+    if: always() && (needs.check-self-hosted.outputs.available == 'false' || needs.build-self-hosted.result == 'failure' || needs.build-self-hosted.result == 'cancelled')
     runs-on: windows-latest
     timeout-minutes: 30
     env:
