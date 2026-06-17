@@ -6,6 +6,8 @@ from typing import Any, Dict, List
 
 from .config import STATUS_OK
 
+
+@dataclass
 class DictionaryData:
     code: str
     name: str

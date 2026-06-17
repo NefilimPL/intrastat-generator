@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 from .models import DictionaryData
 from .text import norm_text, strip_ns
 
+
 class DictionaryLoader:
     def __init__(self, base_dir: Path, dict_dir: Path):
         self.base_dir = base_dir
@@ -14,11 +15,12 @@ class DictionaryLoader:
 
     def discover_paths(self) -> List[Path]:
         found: Dict[str, Path] = {}
-        for folder in [self.dict_dir, self.base_dir]:
+        for folder, recursive in [(self.dict_dir, True), (self.base_dir, False)]:
             if not folder.exists():
                 continue
-            for p in folder.glob("*.xml"):
-                if p.name.lower().startswith("slownik"):
+            pattern = "**/*.xml" if recursive else "*.xml"
+            for p in folder.glob(pattern):
+                if p.is_file() and p.name.lower().startswith("slownik"):
                     found[str(p.resolve()).lower()] = p
         return sorted(found.values(), key=lambda p: p.name.lower())
 
