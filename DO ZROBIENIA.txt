@@ -4,3 +4,4 @@
 - github release z wersjonowaniem (tagi) informacja o wersji w gui) koniecznie z użyciem self hosted runner
 - opcjonalnie informacja o możliwości aktuliazacji + lista dostępnych wersji programu w przypadku upublicznienia.
 - informacja o repo w gui + na samym repo
+- lepsze obliczanie wartości statystycznej (wartośc faktury zawiera wszystkie cen ale do klienta docelowego a nie do granicy polskiej, jakis mechanizm potrzebny do wyliczania tej kwoty)
