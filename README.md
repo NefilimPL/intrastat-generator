@@ -5,7 +5,7 @@ Desktop/CLI generator plikow XLSX do importu INTRASTAT.
 ## Uruchomienie lokalne
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m pip install -e .
 python -m intrastat_generator
 ```
 
