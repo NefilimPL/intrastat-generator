@@ -10,6 +10,10 @@ permissions:
   actions: read
   contents: write
 
+env:
+  PYTHONUTF8: "1"
+  PYTHONIOENCODING: "utf-8"
+
 jobs:
   check-self-hosted:
     name: Check self-hosted runner availability
@@ -37,20 +41,51 @@ jobs:
       INTRASTAT_GENERATOR_VERSION: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - name: Select existing Python
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $candidates = @()
+          $pyLauncher = Get-Command py -ErrorAction SilentlyContinue
+          if ($pyLauncher) {
+            try {
+              $candidate = & py -3.11 -c "import sys; print(sys.executable)"
+              if ($LASTEXITCODE -eq 0 -and $candidate) {
+                $candidates += $candidate.Trim()
+              }
+            } catch {
+            }
+          }
+          $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
+          if ($pythonCommand) {
+            $candidates += $pythonCommand.Source
+          }
+          foreach ($candidate in ($candidates | Select-Object -Unique)) {
+            try {
+              & "$candidate" -c "import sys, tkinter; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)"
+              if ($LASTEXITCODE -eq 0) {
+                "PYTHON_EXE=$candidate" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                & "$candidate" --version
+                exit 0
+              }
+            } catch {
+            }
+          }
+          throw "Python 3.11 or newer with Tkinter is required on the self-hosted runner. Install it and add it to PATH."
       - name: Install dependencies
+        shell: pwsh
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements-dev.txt
-          python -m pip install -e .
+          & "$env:PYTHON_EXE" -m pip install --upgrade pip
+          & "$env:PYTHON_EXE" -m pip install -r requirements-dev.txt
+          & "$env:PYTHON_EXE" -m pip install -e .
       - name: Run tests
-        run: python -m pytest
+        shell: pwsh
+        run: '& "$env:PYTHON_EXE" -m pytest'
       - name: Build EXE
+        shell: pwsh
         run: |
-          python -m PyInstaller --onefile --windowed --name intrastat-generator --paths src src/intrastat_generator/__main__.py
-          python -c "from pathlib import Path; from intrastat_generator.naming import build_release_exe_name; Path('dist/intrastat-generator.exe').rename(Path('dist') / build_release_exe_name('${{ github.ref_name }}'))"
+          & "$env:PYTHON_EXE" -m PyInstaller --onefile --windowed --name intrastat-generator --paths src src/intrastat_generator/__main__.py
+          & "$env:PYTHON_EXE" -c "from pathlib import Path; from intrastat_generator.naming import build_release_exe_name; Path('dist/intrastat-generator.exe').rename(Path('dist') / build_release_exe_name('${{ github.ref_name }}'))"
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
@@ -75,7 +110,7 @@ jobs:
       INTRASTAT_GENERATOR_VERSION: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - name: Install dependencies

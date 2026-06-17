@@ -3,13 +3,27 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 
 from .config import app_name
 from .paths import log_exception
 from .service import GeneratorService
 from .version import get_version
 
+
+def _prefer_utf8_stdio() -> None:
+    for stream in [sys.stdout, sys.stderr]:
+        reconfigure = getattr(stream, "reconfigure", None)
+        if not reconfigure:
+            continue
+        try:
+            reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
+
 def main() -> int:
+    _prefer_utf8_stdio()
     parser = argparse.ArgumentParser(description=app_name(get_version()))
     parser.add_argument("--input", help="Ścieżka do XML deklaracji")
     parser.add_argument("--tariff", help="Ścieżka do taryfa.txt")
