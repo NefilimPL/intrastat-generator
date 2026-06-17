@@ -1,7 +1,11 @@
 V = automatycznie wykrywanie słowników odpowiednich folderach jeżeli już istnieja zamiast tworzenie nowego folderu  (tylko jeżeli nie ma już folderów odpowiednich)
 O = poprawiono wizualnie
 V = gitignore
-V = github release z wersjonowaniem (tagi) informacja o wersji w gui) koniecznie z użyciem self hosted runner
+V = github release z wersjonowaniem (tagi) informacja o wersji w gui koniecznie z użyciem self hosted runner
 O = opcjonalnie informacja o możliwości aktuliazacji + lista dostępnych wersji programu w przypadku upublicznienia.
 O = informacja o repo w gui + na samym repo
 O = w ustawieniach opcja od wybrania konkretnego rocznika taryfy z wczytanego pliku .txt taryf
+O = wersja programu źle sie pokazuje w utworzonym exe pisze że plik jest w wersji 0.0.0-dev zamiast np: v0.0.5 (zgodnie z tagiem). Słowo "dev" oznacza branch który został użyty do utworzenia pliku exe czyli powinno być np: v0.0.6-Main lub v0.0.5-dev
+O = metadane pliku exe do dodania
+O = poprawić wykrywanie lokalizacji słowników i taryf na czyli zamiast folder\folder na folder/folder.
+O = plik exe nie zapisuje do folderu przy pierwszym uruchomieniu do odpowiednich folderów taryfy i słowników (domyślnie jest tylko folder słowniki) fajnie jak by te pliki były dodawane wraz z plikiem exe i wykrywało czy istnieją jakieś pliki jeżeli tak to niech nie podmienia tylko używa istniejących.
