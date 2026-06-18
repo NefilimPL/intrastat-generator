@@ -92,6 +92,7 @@ OUTPUT_COLUMNS = [
 
 DEFAULT_CONFIG: Dict[str, Any] = {
     "tariff_path": "",
+    "tariff_year": "",
     "dict_dir": DICT_DIR_NAME,
     "output_dir": OUTPUT_DIR_NAME,
     "default_delivery_terms": "",

@@ -59,6 +59,8 @@ class App:
         self.msg_queue: "queue.Queue[Tuple[str, Any]]" = queue.Queue()
         self.xml_var = tk.StringVar()
         self.tariff_var = tk.StringVar(value=self.service.guess_tariff_path())
+        self.tariff_year_var = tk.StringVar()
+        self.tariff_year_values: Dict[str, str] = {}
         self.dict_dir_var = tk.StringVar(value=str(resolve_path(self.service.config.get("dict_dir", DICT_DIR_NAME), self.service.base_dir)))
         self.delivery_var = tk.StringVar(value=self.service.config.get("default_delivery_terms", ""))
         self.transaction_var = tk.StringVar(value=self.service.config.get("default_transaction_type", "11"))
@@ -73,6 +75,7 @@ class App:
         self.progress_var = tk.IntVar(value=0)
         self.status_var = tk.StringVar(value="Gotowy")
         self._build_ui()
+        self._refresh_tariff_years()
         self.root.after(120, self._poll_queue)
 
     def _build_ui(self) -> None:
@@ -90,7 +93,11 @@ class App:
         fields.pack(fill="x", pady=(0, 10))
         self._file_row(fields, "XML deklaracji/Subiekta", self.xml_var, self._select_xml, 0)
         self._file_row(fields, "Taryfa CN / taryfa.txt", self.tariff_var, self._select_tariff, 1)
-        self._dir_row(fields, "Folder słowników XML", self.dict_dir_var, self._select_dict_dir, 2)
+        ttk.Label(fields, text="Rocznik taryfy").grid(row=2, column=0, sticky="w", padx=10, pady=8)
+        self.tariff_year_combo = ttk.Combobox(fields, textvariable=self.tariff_year_var, state="disabled", width=18)
+        self.tariff_year_combo.grid(row=2, column=1, sticky="w", padx=10, pady=8)
+        ttk.Button(fields, text="Odśwież roczniki", command=self._refresh_tariff_years).grid(row=2, column=2, padx=10, pady=8)
+        self._dir_row(fields, "Folder słowników XML", self.dict_dir_var, self._select_dict_dir, 3)
 
         options = ttk.LabelFrame(frm, text="Ustawienia domyślne dla brakujących danych")
         options.pack(fill="x", pady=(0, 10))
@@ -377,6 +384,7 @@ class App:
         p = filedialog.askopenfilename(title="Wybierz taryfa.txt", filetypes=[("TXT", "*.txt"), ("Wszystkie pliki", "*.*")])
         if p:
             self.tariff_var.set(p)
+            self._refresh_tariff_years()
 
     def _select_dict_dir(self) -> None:
         p = filedialog.askdirectory(title="Wybierz folder słowników XML")
@@ -392,8 +400,43 @@ class App:
         self.transport_combo.configure(values=self.service.dict_codes_for_gui("005"))
         self.log("Odświeżono listy domyślnych wartości ze słowników XML.")
 
+    def _refresh_tariff_years(self) -> None:
+        previous_year = self._selected_tariff_year() or norm_text(self.service.config.get("tariff_year", ""))
+        self.tariff_year_values = {}
+        tariff = Path(self.tariff_var.get().strip().strip('"'))
+        if not str(tariff) or not tariff.exists():
+            self.tariff_year_combo.configure(values=[], state="disabled")
+            self.tariff_year_var.set("")
+            return
+        try:
+            options = self.service.tariff_year_options(tariff)
+        except Exception as exc:
+            self.tariff_year_combo.configure(values=[], state="disabled")
+            self.tariff_year_var.set("")
+            self.log(f"Nie udało się odczytać roczników taryfy: {exc}")
+            return
+        labels = [label for label, _year in options]
+        self.tariff_year_values = dict(options)
+        if not labels:
+            self.tariff_year_combo.configure(values=[], state="disabled")
+            self.tariff_year_var.set("")
+            return
+        selected = previous_year if previous_year in [year for _label, year in options] else self.service.resolve_tariff_year(tariff)
+        selected_label = next((label for label, year in options if year == selected), labels[0])
+        self.tariff_year_combo.configure(values=labels, state="readonly")
+        self.tariff_year_var.set(selected_label)
+
+    def _selected_tariff_year(self) -> str:
+        return self.tariff_year_values.get(self.tariff_year_var.get(), "")
+
     def _save_options_to_config(self) -> None:
-        self.service.config["tariff_path"] = self.tariff_var.get().strip()
+        tariff_path = self.tariff_var.get().strip()
+        selected_tariff_year = self._selected_tariff_year()
+        tariff = Path(tariff_path.strip('"'))
+        if str(tariff) and tariff.exists():
+            selected_tariff_year = self.service.tariff_year_config_value(tariff, selected_tariff_year)
+        self.service.config["tariff_path"] = tariff_path
+        self.service.config["tariff_year"] = selected_tariff_year
         self.service.config["dict_dir"] = self.dict_dir_var.get().strip() or DICT_DIR_NAME
         self.service.config["default_delivery_terms"] = self.delivery_var.get().strip().upper()
         self.service.config["default_transaction_type"] = self.transaction_var.get().strip()
@@ -422,6 +465,7 @@ class App:
         if not str(tariff) or not tariff.exists():
             messagebox.showwarning(APP_NAME, "Wskaż poprawny plik taryfa.txt.")
             return
+        self._refresh_tariff_years()
         self._save_options_to_config()
         self.generate_btn.config(state="disabled")
         self.progress_var.set(0)
