@@ -10,7 +10,7 @@ from .dictionaries import DictionaryLoader
 from .models import DictionaryData
 from .naming import build_xlsx_filename
 from .parser import IntrastatXmlParser
-from .paths import ensure_dirs, get_app_dir, resolve_path
+from .paths import ensure_dirs, format_config_path, get_app_dir, resolve_path, select_tariff_path
 from .tariff import TariffLoader
 from .text import norm_text, safe_float
 from .transport import RouteCostManager
@@ -48,14 +48,12 @@ class GeneratorService:
 
     def guess_tariff_path(self) -> str:
         configured = norm_text(self.config.get("tariff_path", ""))
-        if configured and Path(configured).exists():
-            return configured
-        for name in ["taryfa.txt", "taryfa(1).txt"]:
-            p = self.base_dir / name
-            if p.exists():
-                self.config["tariff_path"] = str(p)
-                self.save_config()
-                return str(p)
+        tariff = select_tariff_path(self.base_dir, configured)
+        if tariff is not None:
+            value = format_config_path(tariff)
+            self.config["tariff_path"] = value
+            self.save_config()
+            return value
         return configured
 
     def available_tariff_years(self, tariff_path: Path) -> List[str]:
@@ -105,7 +103,7 @@ class GeneratorService:
 
         configured_tariff_year = norm_text(self.config.get("tariff_year", ""))
         effective_tariff_year = self.resolve_tariff_year(tariff_path)
-        self.config["tariff_path"] = str(tariff_path)
+        self.config["tariff_path"] = format_config_path(tariff_path)
         self.config["tariff_year"] = self.tariff_year_config_value(tariff_path, configured_tariff_year)
         self.save_config()
         run_config = self.config.copy()
