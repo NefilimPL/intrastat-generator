@@ -25,6 +25,7 @@ class TariffEntry:
     spaced_code: str
     description: str
     path_text: str
+    year: str = ""
 
 
 @dataclass

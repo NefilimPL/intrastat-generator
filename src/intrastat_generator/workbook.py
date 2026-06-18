@@ -324,6 +324,7 @@ class WorkbookBuilder:
             ["Tras kosztowych", len(self.route_config.get("routes", []))],
             ["Słowników wczytanych", len(self.dicts)],
             ["Kodów taryfy wczytanych", len(self.tariff_entries)],
+            ["Rocznik taryfy", self.config.get("tariff_year", "")],
             ["Pozycji z pustym CN", sum(1 for d in self.decisions if d.get("Status") == STATUS_MISSING)],
             ["Pozycji z niepewnym CN", sum(1 for d in self.decisions if d.get("Status") == STATUS_UNCERTAIN)],
         ]

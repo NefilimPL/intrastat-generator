@@ -71,7 +71,7 @@ keeps compatibility with single-year or older tariff files that do not include
 `src/intrastat_generator/config.py`
 : Adds a new default config field named `tariff_year`. Empty value means
   auto-select the highest available year from the file. Non-empty value stores
-  the raw year, for example `2025`, not the GUI label.
+  a manually selected older raw year, for example `2025`, not the GUI label.
 
 `src/intrastat_generator/workbook.py`
 : Writes the selected tariff year into the `Ustawienia` sheet for auditability.
@@ -82,7 +82,10 @@ keeps compatibility with single-year or older tariff files that do not include
 2. GUI asks the service for available tariff years in that file.
 3. The service scans top-level headers matching `^\s*TARYFA\s+(\d{4})\s*$`.
 4. GUI sorts years descending and displays the highest year as `<year>-Obecny`.
-5. GUI stores the selected raw year value in config, for example `2025`.
+5. GUI stores an empty config value when the selected label is the highest
+   `<year>-Obecny` option, preserving automatic current-year behavior for future
+   tariff files. If the user selects an older year, GUI stores that raw year
+   value in config, for example `2025`.
 6. During generation, the service resolves the effective tariff year:
    - saved year if it exists in the file,
    - otherwise the highest detected year,

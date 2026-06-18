@@ -54,6 +54,7 @@ def test_workbook_builder_writes_settings_and_route_cost_sheets(tmp_path):
         "cn_confident_threshold": 90.0,
         "cn_uncertain_threshold": 80.0,
         "statistical_value_mode": "blank",
+        "tariff_year": "2025",
     }
     builder = WorkbookBuilder(
         dicts={},
@@ -70,5 +71,7 @@ def test_workbook_builder_writes_settings_and_route_cost_sheets(tmp_path):
     try:
         assert "Ustawienia" in workbook.sheetnames
         assert "Koszty_transportu" in workbook.sheetnames
+        settings_rows = list(workbook["Ustawienia"].iter_rows(values_only=True))
+        assert ("Rocznik taryfy", "2025") in settings_rows
     finally:
         workbook.close()
