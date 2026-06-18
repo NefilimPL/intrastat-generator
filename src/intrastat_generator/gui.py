@@ -27,13 +27,21 @@ except Exception:
 
 from .cn import HAS_RAPIDFUZZ
 from .config import DEFAULT_CONFIG, DICT_DIR_NAME, OUTPUT_DIR_NAME, VOIVODESHIPS, app_name, load_json
-from .paths import log_exception, resolve_path
+from .paths import format_config_path, log_exception, resolve_path
 from .service import GeneratorService
 from .text import norm_text, parse_yes_no, safe_float, yes_no
 from .transport import RouteCostManager
 from .version import get_version
 
 APP_NAME = app_name(get_version())
+
+
+def format_gui_path(value: str | Path) -> str:
+    text = str(value).strip().strip('"')
+    if not text:
+        return ""
+    return format_config_path(Path(text))
+
 
 def path_from_drop_data(root: tk.Tk, data: str) -> str:  # type: ignore[name-defined]
     try:
@@ -58,10 +66,10 @@ class App:
 
         self.msg_queue: "queue.Queue[Tuple[str, Any]]" = queue.Queue()
         self.xml_var = tk.StringVar()
-        self.tariff_var = tk.StringVar(value=self.service.guess_tariff_path())
+        self.tariff_var = tk.StringVar(value=format_gui_path(self.service.guess_tariff_path()))
         self.tariff_year_var = tk.StringVar()
         self.tariff_year_values: Dict[str, str] = {}
-        self.dict_dir_var = tk.StringVar(value=str(resolve_path(self.service.config.get("dict_dir", DICT_DIR_NAME), self.service.base_dir)))
+        self.dict_dir_var = tk.StringVar(value=format_gui_path(resolve_path(self.service.config.get("dict_dir", DICT_DIR_NAME), self.service.base_dir)))
         self.delivery_var = tk.StringVar(value=self.service.config.get("default_delivery_terms", ""))
         self.transaction_var = tk.StringVar(value=self.service.config.get("default_transaction_type", "11"))
         self.transport_var = tk.StringVar(value=self.service.config.get("default_transport_type", ""))
@@ -183,7 +191,7 @@ class App:
             return
         try:
             widget.drop_target_register(DND_FILES)
-            widget.dnd_bind("<<Drop>>", lambda event: var.set(path_from_drop_data(self.root, event.data)))
+            widget.dnd_bind("<<Drop>>", lambda event: var.set(format_gui_path(path_from_drop_data(self.root, event.data))))
         except Exception:
             pass
 
@@ -378,18 +386,18 @@ class App:
     def _select_xml(self) -> None:
         p = filedialog.askopenfilename(title="Wybierz XML deklaracji", filetypes=[("XML", "*.xml"), ("Wszystkie pliki", "*.*")])
         if p:
-            self.xml_var.set(p)
+            self.xml_var.set(format_gui_path(p))
 
     def _select_tariff(self) -> None:
         p = filedialog.askopenfilename(title="Wybierz taryfa.txt", filetypes=[("TXT", "*.txt"), ("Wszystkie pliki", "*.*")])
         if p:
-            self.tariff_var.set(p)
+            self.tariff_var.set(format_gui_path(p))
             self._refresh_tariff_years()
 
     def _select_dict_dir(self) -> None:
         p = filedialog.askdirectory(title="Wybierz folder słowników XML")
         if p:
-            self.dict_dir_var.set(p)
+            self.dict_dir_var.set(format_gui_path(p))
             self._save_options_to_config()
             self._refresh_dictionary_combos()
 
@@ -430,14 +438,17 @@ class App:
         return self.tariff_year_values.get(self.tariff_year_var.get(), "")
 
     def _save_options_to_config(self) -> None:
-        tariff_path = self.tariff_var.get().strip()
+        tariff_path = format_gui_path(self.tariff_var.get())
+        dict_dir = format_gui_path(self.dict_dir_var.get()) or DICT_DIR_NAME
         selected_tariff_year = self._selected_tariff_year()
         tariff = Path(tariff_path.strip('"'))
         if str(tariff) and tariff.exists():
             selected_tariff_year = self.service.tariff_year_config_value(tariff, selected_tariff_year)
+        self.tariff_var.set(tariff_path)
+        self.dict_dir_var.set(dict_dir)
         self.service.config["tariff_path"] = tariff_path
         self.service.config["tariff_year"] = selected_tariff_year
-        self.service.config["dict_dir"] = self.dict_dir_var.get().strip() or DICT_DIR_NAME
+        self.service.config["dict_dir"] = dict_dir
         self.service.config["default_delivery_terms"] = self.delivery_var.get().strip().upper()
         self.service.config["default_transaction_type"] = self.transaction_var.get().strip()
         self.service.config["default_transport_type"] = self.transport_var.get().strip()

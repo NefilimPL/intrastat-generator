@@ -5,6 +5,7 @@ from pathlib import Path
 
 from intrastat_generator.paths import ensure_dirs, format_config_path, get_app_dir, select_dictionary_dir
 from intrastat_generator.service import GeneratorService
+from intrastat_generator.gui import format_gui_path
 
 
 def test_source_app_dir_is_project_root_not_package_dir():
@@ -17,6 +18,12 @@ def test_format_config_path_uses_forward_slashes(tmp_path: Path):
     path = tmp_path / "folder" / "child"
 
     assert format_config_path(path) == path.as_posix()
+
+
+def test_format_gui_path_uses_forward_slashes(tmp_path: Path):
+    path = tmp_path / "folder" / "slowniki"
+
+    assert format_gui_path(path) == path.as_posix()
 
 
 def test_select_dictionary_dir_prefers_existing_slowniki_folder(tmp_path: Path):

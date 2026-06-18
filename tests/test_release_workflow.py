@@ -76,6 +76,19 @@ def test_windows_build_jobs_add_exe_metadata_and_bundle_resources():
         assert "build_release_exe_name('$env:INTRASTAT_GENERATOR_VERSION')" in block
 
 
+def test_version_info_here_strings_remain_inside_yaml_run_blocks():
+    lines = release_workflow_text().splitlines()
+
+    for index, line in enumerate(lines):
+        if line.strip() != '@"':
+            continue
+        indent = line[: len(line) - len(line.lstrip())]
+        assert lines[index + 1].startswith(indent)
+        closing_index = next(i for i in range(index + 1, len(lines)) if lines[i].lstrip().startswith('"@'))
+        for body_line in lines[index + 1 : closing_index + 1]:
+            assert body_line.startswith(indent)
+
+
 def test_self_hosted_build_uses_existing_python_instead_of_setup_python():
     workflow = release_workflow_text()
     self_hosted = job_block(workflow, "build-self-hosted", "build-github-hosted")
