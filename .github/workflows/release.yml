@@ -109,6 +109,10 @@ jobs:
             }
           }
           throw "Python 3.11 or newer with Tkinter is required on the self-hosted runner. Install it and add it to PATH."
+      - name: Embed runtime build info
+        run: |
+          Write-Host "Writing src/intrastat_generator/_build_info.py"
+          & "$env:PYTHON_EXE" .github/scripts/embed_build_info.py
       - name: Install dependencies
         run: |
           & "$env:PYTHON_EXE" -m pip install --upgrade pip
@@ -142,19 +146,21 @@ jobs:
             kids=[
               StringFileInfo([
                 StringTable(
-                  '040904B0',
+                  '041504B0',
                   [
-                    StringStruct('CompanyName', 'NefilimPL'),
+                    StringStruct('Comments', 'License: MIT; Authors: NefilimPL and contributors'),
+                    StringStruct('CompanyName', 'NefilimPL and contributors'),
                     StringStruct('FileDescription', 'Generator INTRASTAT XLSX'),
                     StringStruct('FileVersion', '$version'),
                     StringStruct('InternalName', 'intrastat-generator'),
+                    StringStruct('LegalCopyright', 'Copyright (c) 2026 NefilimPL and contributors'),
                     StringStruct('OriginalFilename', 'intrastat-generator.exe'),
                     StringStruct('ProductName', 'Generator INTRASTAT XLSX'),
                     StringStruct('ProductVersion', '$version')
                   ]
                 )
               ]),
-              VarFileInfo([VarStruct('Translation', [1033, 1200])])
+              VarFileInfo([VarStruct('Translation', [1045, 1200])])
             ]
           )
           "@ | Set-Content -Path build/version_info.txt -Encoding UTF8
@@ -229,6 +235,10 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
+      - name: Embed runtime build info
+        run: |
+          Write-Host "Writing src/intrastat_generator/_build_info.py"
+          python .github/scripts/embed_build_info.py
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -262,19 +272,21 @@ jobs:
             kids=[
               StringFileInfo([
                 StringTable(
-                  '040904B0',
+                  '041504B0',
                   [
-                    StringStruct('CompanyName', 'NefilimPL'),
+                    StringStruct('Comments', 'License: MIT; Authors: NefilimPL and contributors'),
+                    StringStruct('CompanyName', 'NefilimPL and contributors'),
                     StringStruct('FileDescription', 'Generator INTRASTAT XLSX'),
                     StringStruct('FileVersion', '$version'),
                     StringStruct('InternalName', 'intrastat-generator'),
+                    StringStruct('LegalCopyright', 'Copyright (c) 2026 NefilimPL and contributors'),
                     StringStruct('OriginalFilename', 'intrastat-generator.exe'),
                     StringStruct('ProductName', 'Generator INTRASTAT XLSX'),
                     StringStruct('ProductVersion', '$version')
                   ]
                 )
               ]),
-              VarFileInfo([VarStruct('Translation', [1033, 1200])])
+              VarFileInfo([VarStruct('Translation', [1045, 1200])])
             ]
           )
           "@ | Set-Content -Path build/version_info.txt -Encoding UTF8

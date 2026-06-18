@@ -8,6 +8,8 @@ version = "0.0.0"
 description = "Generator XLSX INTRASTAT"
 readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "NefilimPL and contributors" }]
 dependencies = [
   "openpyxl>=3.1.0",
   "rapidfuzz>=3.0.0",

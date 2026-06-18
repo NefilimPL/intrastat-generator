@@ -1,0 +1,2 @@
+BUILD_VERSION = ""
+BUILD_BRANCH = ""

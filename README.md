@@ -18,7 +18,7 @@ python -m intrastat_generator --input intrastat.xml --tariff Taryfa/taryfa.txt -
 ## Release EXE
 
 Release jest tworzony z tagow `v*`, np. `v3.4.0`.
-Artefakt ma nazwe `Intrastat-Generator_<tag>_Windows_x64.exe`.
+Artefakt ma nazwe `Intrastat-Generator_<tag>-<branch>_Windows_x64.exe`.
 
 Workflow najpierw sprawdza self-hosted runner `Windows`/`X64`. GitHub wymaga
 uprawnienia `Administration: read` do API listowania runnerow, dlatego dla
@@ -43,3 +43,7 @@ Do tworzenia draft release i dodawania EXE wystarcza standardowy `GITHUB_TOKEN`
 z `contents: write`, o ile ustawienia repozytorium pozwalaja GitHub Actions
 zapisywac w repo. Dodatkowy fine-grained PAT jest potrzebny tylko do dokladnego
 sprawdzania self-hosted runnerow przez API (`RUNNER_CHECK_TOKEN`).
+
+## Licencja
+
+MIT. Szczegoly sa w pliku [LICENSE](LICENSE).
