@@ -91,13 +91,17 @@ def _materialize_bundled_folder(
     bundle_dir = _bundle_dir()
     if bundle_dir is None:
         return
-    if any(contains_files(base_dir / name) for name in folder_names):
+    sources = [bundle_dir / name for name in folder_names if contains_files(bundle_dir / name)]
+    if not sources:
         return
-    for name in folder_names:
-        source = bundle_dir / name
-        if contains_files(source):
-            _copy_missing_tree(source, base_dir / source.name)
-            return
+    existing_targets = [base_dir / name for name in folder_names if (base_dir / name).is_dir()]
+    target = next((path for path in existing_targets if contains_files(path)), None)
+    if target is None and existing_targets:
+        target = existing_targets[0]
+    if target is None:
+        target = base_dir / sources[0].name
+    for source in sources:
+        _copy_missing_tree(source, target)
 
 
 def materialize_bundled_resources(base_dir: Path) -> None:

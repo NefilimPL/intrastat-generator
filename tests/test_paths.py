@@ -87,3 +87,42 @@ def test_service_copies_bundled_tariff_folder_and_uses_local_copy(tmp_path: Path
     tariff = app_dir / "Taryfa" / "taryfa.txt"
     assert tariff.exists()
     assert service.guess_tariff_path() == tariff.as_posix()
+
+
+def test_ensure_dirs_copies_only_missing_bundled_dictionary_files(tmp_path: Path, monkeypatch):
+    app_dir = tmp_path / "app"
+    existing_dict_dir = app_dir / "Słowniki"
+    existing_dict_dir.mkdir(parents=True)
+    existing_dict = existing_dict_dir / "slownik002.xml"
+    existing_dict.write_text("custom dictionary", encoding="utf-8")
+    bundle_dir = tmp_path / "bundle"
+    bundled_dict_dir = bundle_dir / "Słowniki"
+    bundled_dict_dir.mkdir(parents=True)
+    (bundled_dict_dir / "slownik002.xml").write_text("bundled dictionary", encoding="utf-8")
+    (bundled_dict_dir / "slownik004.xml").write_text("missing dictionary", encoding="utf-8")
+    monkeypatch.setattr(sys, "_MEIPASS", str(bundle_dir), raising=False)
+
+    paths = ensure_dirs(app_dir, {"dict_dir": "slowniki", "output_dir": "out"})
+
+    assert paths["dict"] == existing_dict_dir
+    assert existing_dict.read_text(encoding="utf-8") == "custom dictionary"
+    assert (existing_dict_dir / "slownik004.xml").read_text(encoding="utf-8") == "missing dictionary"
+
+
+def test_ensure_dirs_copies_only_missing_bundled_tariff_files(tmp_path: Path, monkeypatch):
+    app_dir = tmp_path / "app"
+    existing_tariff_dir = app_dir / "Taryfa"
+    existing_tariff_dir.mkdir(parents=True)
+    existing_tariff = existing_tariff_dir / "taryfa.txt"
+    existing_tariff.write_text("custom tariff", encoding="utf-8")
+    bundle_dir = tmp_path / "bundle"
+    bundled_tariff_dir = bundle_dir / "Taryfa"
+    bundled_tariff_dir.mkdir(parents=True)
+    (bundled_tariff_dir / "taryfa.txt").write_text("bundled tariff", encoding="utf-8")
+    (bundled_tariff_dir / "taryfa(1).txt").write_text("missing tariff", encoding="utf-8")
+    monkeypatch.setattr(sys, "_MEIPASS", str(bundle_dir), raising=False)
+
+    ensure_dirs(app_dir, {"dict_dir": "slowniki", "output_dir": "out"})
+
+    assert existing_tariff.read_text(encoding="utf-8") == "custom tariff"
+    assert (existing_tariff_dir / "taryfa(1).txt").read_text(encoding="utf-8") == "missing tariff"
