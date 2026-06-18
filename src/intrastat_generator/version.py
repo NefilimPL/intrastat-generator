@@ -4,6 +4,11 @@ import os
 import re
 from collections.abc import Mapping
 
+try:
+    from ._build_info import BUILD_VERSION
+except Exception:
+    BUILD_VERSION = ""
+
 DEFAULT_VERSION = "0.0.0-dev"
 VERSION_ENV = "INTRASTAT_GENERATOR_VERSION"
 BRANCH_ENV = "INTRASTAT_GENERATOR_BRANCH"
@@ -17,10 +22,15 @@ def _safe_version_part(value: str) -> str:
 
 
 def resolve_version(env: Mapping[str, str] | None = None) -> str:
-    values = os.environ if env is None else env
+    use_runtime_environment = env is None
+    values = os.environ if use_runtime_environment else env
     explicit = values.get(VERSION_ENV, "").strip()
     if explicit:
         return explicit
+
+    embedded = str(BUILD_VERSION).strip() if use_runtime_environment else ""
+    if embedded:
+        return embedded
 
     github_ref = values.get("GITHUB_REF_NAME", "").strip()
     branch = _safe_version_part(values.get(BRANCH_ENV, "").strip())

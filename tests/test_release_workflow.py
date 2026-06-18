@@ -61,6 +61,19 @@ def test_windows_build_jobs_compute_tag_branch_version_before_tests():
         assert block.index("- name: Prepare build version") < block.index("- name: Run tests")
 
 
+def test_windows_build_jobs_embed_runtime_build_info_before_tests():
+    workflow = release_workflow_text()
+
+    for job_name in ["build-self-hosted", "build-github-hosted"]:
+        block = job_block(workflow, job_name)
+
+        assert "- name: Embed runtime build info" in block
+        assert ".github/scripts/embed_build_info.py" in block
+        assert "src/intrastat_generator/_build_info.py" in block
+        assert block.index("- name: Embed runtime build info") < block.index("- name: Run tests")
+        assert block.index("- name: Embed runtime build info") < block.index("- name: Build EXE")
+
+
 def test_windows_build_jobs_add_exe_metadata_and_bundle_resources():
     workflow = release_workflow_text()
 
@@ -74,6 +87,21 @@ def test_windows_build_jobs_add_exe_metadata_and_bundle_resources():
         assert "Słowniki;Słowniki" in block
         assert "Taryfa;Taryfa" in block
         assert "build_release_exe_name('$env:INTRASTAT_GENERATOR_VERSION')" in block
+
+
+def test_windows_exe_metadata_uses_polish_language_and_project_legal_info():
+    workflow = release_workflow_text()
+
+    for job_name in ["build-self-hosted", "build-github-hosted"]:
+        block = job_block(workflow, job_name)
+
+        assert "'041504B0'" in block
+        assert "VarStruct('Translation', [1045, 1200])" in block
+        assert "'040904B0'" not in block
+        assert "VarStruct('Translation', [1033, 1200])" not in block
+        assert "StringStruct('CompanyName', 'NefilimPL and contributors')" in block
+        assert "StringStruct('LegalCopyright', 'Copyright (c) 2026 NefilimPL and contributors')" in block
+        assert "StringStruct('Comments', 'License: MIT; Authors: NefilimPL and contributors')" in block
 
 
 def test_version_info_here_strings_remain_inside_yaml_run_blocks():
