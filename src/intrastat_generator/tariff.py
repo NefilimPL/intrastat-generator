@@ -19,7 +19,7 @@ class TariffLoader:
         years = set()
         with self.tariff_path.open("r", encoding="utf-8", errors="replace") as f:
             for raw in f:
-                match = self.YEAR_RE.match(raw.strip())
+                match = self.YEAR_RE.match(self._strip_bom(raw).strip())
                 if match:
                     years.add(match.group(1))
         return sorted(years, reverse=True)
@@ -31,7 +31,7 @@ class TariffLoader:
         current_year = ""
         with self.tariff_path.open("r", encoding="utf-8", errors="replace") as f:
             for raw in f:
-                line = raw.rstrip("\n\r")
+                line = self._strip_bom(raw.rstrip("\n\r"))
                 if not line.strip():
                     continue
                 indent = len(line) - len(line.lstrip("\t "))
@@ -68,4 +68,7 @@ class TariffLoader:
             context.pop()
         context.append((indent, text))
 
+    @staticmethod
+    def _strip_bom(text: str) -> str:
+        return text.removeprefix("\ufeff")
 

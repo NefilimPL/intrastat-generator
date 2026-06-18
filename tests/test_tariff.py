@@ -27,6 +27,20 @@ TARYFA 2024
     assert TariffLoader(tariff).available_years() == ["2026", "2025", "2024"]
 
 
+def test_tariff_loader_detects_year_from_utf8_bom_first_header(tmp_path):
+    tariff = tmp_path / "taryfa.txt"
+    tariff.write_bytes(
+        (
+            "\ufeffTARYFA 2026\n"
+            "    9401 10 00 - Seats 2026\n"
+            "TARYFA 2025\n"
+            "    9401 10 00 - Seats 2025\n"
+        ).encode("utf-8")
+    )
+
+    assert TariffLoader(tariff).available_years() == ["2026", "2025"]
+
+
 def test_tariff_loader_loads_only_selected_year_section(tmp_path):
     tariff = tmp_path / "taryfa.txt"
     write_tariff(
