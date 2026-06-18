@@ -12,7 +12,7 @@ python -m intrastat_generator
 ## Tryb CLI
 
 ```powershell
-python -m intrastat_generator --input intrastat.xml --tariff Taryfa\taryfa.txt --no-gui
+python -m intrastat_generator --input intrastat.xml --tariff Taryfa/taryfa.txt --no-gui
 ```
 
 ## Release EXE

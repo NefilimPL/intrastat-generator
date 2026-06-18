@@ -47,6 +47,35 @@ def test_windows_build_jobs_run_tests_before_building_exe():
         assert block.index("- name: Run tests") < block.index("- name: Build EXE")
 
 
+def test_windows_build_jobs_compute_tag_branch_version_before_tests():
+    workflow = release_workflow_text()
+
+    for job_name in ["build-self-hosted", "build-github-hosted"]:
+        block = job_block(workflow, job_name)
+
+        assert "- name: Prepare build version" in block
+        assert "fetch-depth: 0" in block
+        assert "INTRASTAT_GENERATOR_BRANCH" in block
+        assert "INTRASTAT_GENERATOR_VERSION" in block
+        assert "github.ref_type" in block
+        assert block.index("- name: Prepare build version") < block.index("- name: Run tests")
+
+
+def test_windows_build_jobs_add_exe_metadata_and_bundle_resources():
+    workflow = release_workflow_text()
+
+    for job_name in ["build-self-hosted", "build-github-hosted"]:
+        block = job_block(workflow, job_name)
+
+        assert "- name: Generate EXE metadata" in block
+        assert "--version-file" in block
+        assert "build/version_info.txt" in block or "build\\version_info.txt" in block
+        assert "--add-data" in block
+        assert "Słowniki;Słowniki" in block
+        assert "Taryfa;Taryfa" in block
+        assert "build_release_exe_name('$env:INTRASTAT_GENERATOR_VERSION')" in block
+
+
 def test_self_hosted_build_uses_existing_python_instead_of_setup_python():
     workflow = release_workflow_text()
     self_hosted = job_block(workflow, "build-self-hosted", "build-github-hosted")

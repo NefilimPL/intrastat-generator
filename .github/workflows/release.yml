@@ -37,10 +37,46 @@ jobs:
     if: needs.check-self-hosted.outputs.available != 'false'
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 30
-    env:
-      INTRASTAT_GENERATOR_VERSION: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Prepare build version
+        run: |
+          $ErrorActionPreference = "Stop"
+          $refName = "${{ github.ref_name }}"
+          $refType = "${{ github.ref_type }}"
+          $branch = $refName
+          if ($refType -eq "tag") {
+            $branches = @(git branch -r --contains HEAD |
+              ForEach-Object { $_.Trim() } |
+              Where-Object { $_ -like "origin/*" -and $_ -notlike "origin/HEAD*" } |
+              ForEach-Object { $_ -replace "^origin/", "" })
+            foreach ($preferred in @("Main", "main", "dev")) {
+              if ($branches -contains $preferred) {
+                $branch = $preferred
+                break
+              }
+            }
+            if (-not $branch -or $branch -eq $refName) {
+              $branch = $branches | Select-Object -First 1
+            }
+            if (-not $branch) {
+              $branch = "unknown"
+            }
+          }
+          $branchSafe = ($branch -replace "[^A-Za-z0-9_.-]+", "-").Trim("-")
+          if (-not $branchSafe) {
+            $branchSafe = "unknown"
+          }
+          if ($refType -eq "tag" -and $refName.StartsWith("v")) {
+            $version = "$refName-$branchSafe"
+          } else {
+            $version = "0.0.0-$branchSafe"
+          }
+          "INTRASTAT_GENERATOR_BRANCH=$branchSafe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "INTRASTAT_GENERATOR_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Build version: $version"
       - name: Select existing Python
         run: |
           $ErrorActionPreference = "Stop"
@@ -80,10 +116,56 @@ jobs:
           & "$env:PYTHON_EXE" -m pip install -e .
       - name: Run tests
         run: '& "$env:PYTHON_EXE" -m pytest'
+      - name: Generate EXE metadata
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Force -Path build | Out-Null
+          $version = $env:INTRASTAT_GENERATOR_VERSION
+          $numeric = [regex]::Match($version, "v?(\d+)\.(\d+)\.(\d+)")
+          if ($numeric.Success) {
+            $fileTuple = "$($numeric.Groups[1].Value), $($numeric.Groups[2].Value), $($numeric.Groups[3].Value), 0"
+          } else {
+            $fileTuple = "0, 0, 0, 0"
+          }
+          @"
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=($fileTuple),
+    prodvers=($fileTuple),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable(
+        '040904B0',
+        [
+          StringStruct('CompanyName', 'NefilimPL'),
+          StringStruct('FileDescription', 'Generator INTRASTAT XLSX'),
+          StringStruct('FileVersion', '$version'),
+          StringStruct('InternalName', 'intrastat-generator'),
+          StringStruct('OriginalFilename', 'intrastat-generator.exe'),
+          StringStruct('ProductName', 'Generator INTRASTAT XLSX'),
+          StringStruct('ProductVersion', '$version')
+        ]
+      )
+    ]),
+    VarFileInfo([VarStruct('Translation', [1033, 1200])])
+  ]
+)
+"@ | Set-Content -Path build/version_info.txt -Encoding UTF8
       - name: Build EXE
         run: |
-          & "$env:PYTHON_EXE" -m PyInstaller --onefile --windowed --name intrastat-generator --paths src src/intrastat_generator/__main__.py
-          & "$env:PYTHON_EXE" -c "from pathlib import Path; from intrastat_generator.naming import build_release_exe_name; Path('dist/intrastat-generator.exe').rename(Path('dist') / build_release_exe_name('${{ github.ref_name }}'))"
+          $addData = @()
+          if (Test-Path "Słowniki") { $addData += @("--add-data", "Słowniki;Słowniki") }
+          if (Test-Path "Slowniki") { $addData += @("--add-data", "Slowniki;Slowniki") }
+          if (Test-Path "Taryfa") { $addData += @("--add-data", "Taryfa;Taryfa") }
+          & "$env:PYTHON_EXE" -m PyInstaller --onefile --windowed --name intrastat-generator --paths src --version-file build/version_info.txt @addData src/intrastat_generator/__main__.py
+          & "$env:PYTHON_EXE" -c "from pathlib import Path; from intrastat_generator.naming import build_release_exe_name; Path('dist/intrastat-generator.exe').rename(Path('dist') / build_release_exe_name('$env:INTRASTAT_GENERATOR_VERSION'))"
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
@@ -104,10 +186,46 @@ jobs:
     if: always() && (needs.check-self-hosted.outputs.available == 'false' || needs.build-self-hosted.result == 'failure' || needs.build-self-hosted.result == 'cancelled')
     runs-on: windows-latest
     timeout-minutes: 30
-    env:
-      INTRASTAT_GENERATOR_VERSION: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Prepare build version
+        run: |
+          $ErrorActionPreference = "Stop"
+          $refName = "${{ github.ref_name }}"
+          $refType = "${{ github.ref_type }}"
+          $branch = $refName
+          if ($refType -eq "tag") {
+            $branches = @(git branch -r --contains HEAD |
+              ForEach-Object { $_.Trim() } |
+              Where-Object { $_ -like "origin/*" -and $_ -notlike "origin/HEAD*" } |
+              ForEach-Object { $_ -replace "^origin/", "" })
+            foreach ($preferred in @("Main", "main", "dev")) {
+              if ($branches -contains $preferred) {
+                $branch = $preferred
+                break
+              }
+            }
+            if (-not $branch -or $branch -eq $refName) {
+              $branch = $branches | Select-Object -First 1
+            }
+            if (-not $branch) {
+              $branch = "unknown"
+            }
+          }
+          $branchSafe = ($branch -replace "[^A-Za-z0-9_.-]+", "-").Trim("-")
+          if (-not $branchSafe) {
+            $branchSafe = "unknown"
+          }
+          if ($refType -eq "tag" -and $refName.StartsWith("v")) {
+            $version = "$refName-$branchSafe"
+          } else {
+            $version = "0.0.0-$branchSafe"
+          }
+          "INTRASTAT_GENERATOR_BRANCH=$branchSafe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "INTRASTAT_GENERATOR_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Build version: $version"
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
@@ -118,10 +236,56 @@ jobs:
           python -m pip install -e .
       - name: Run tests
         run: python -m pytest
+      - name: Generate EXE metadata
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Force -Path build | Out-Null
+          $version = $env:INTRASTAT_GENERATOR_VERSION
+          $numeric = [regex]::Match($version, "v?(\d+)\.(\d+)\.(\d+)")
+          if ($numeric.Success) {
+            $fileTuple = "$($numeric.Groups[1].Value), $($numeric.Groups[2].Value), $($numeric.Groups[3].Value), 0"
+          } else {
+            $fileTuple = "0, 0, 0, 0"
+          }
+          @"
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=($fileTuple),
+    prodvers=($fileTuple),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable(
+        '040904B0',
+        [
+          StringStruct('CompanyName', 'NefilimPL'),
+          StringStruct('FileDescription', 'Generator INTRASTAT XLSX'),
+          StringStruct('FileVersion', '$version'),
+          StringStruct('InternalName', 'intrastat-generator'),
+          StringStruct('OriginalFilename', 'intrastat-generator.exe'),
+          StringStruct('ProductName', 'Generator INTRASTAT XLSX'),
+          StringStruct('ProductVersion', '$version')
+        ]
+      )
+    ]),
+    VarFileInfo([VarStruct('Translation', [1033, 1200])])
+  ]
+)
+"@ | Set-Content -Path build/version_info.txt -Encoding UTF8
       - name: Build EXE
         run: |
-          python -m PyInstaller --onefile --windowed --name intrastat-generator --paths src src/intrastat_generator/__main__.py
-          python -c "from pathlib import Path; from intrastat_generator.naming import build_release_exe_name; Path('dist/intrastat-generator.exe').rename(Path('dist') / build_release_exe_name('${{ github.ref_name }}'))"
+          $addData = @()
+          if (Test-Path "Słowniki") { $addData += @("--add-data", "Słowniki;Słowniki") }
+          if (Test-Path "Slowniki") { $addData += @("--add-data", "Slowniki;Slowniki") }
+          if (Test-Path "Taryfa") { $addData += @("--add-data", "Taryfa;Taryfa") }
+          python -m PyInstaller --onefile --windowed --name intrastat-generator --paths src --version-file build/version_info.txt @addData src/intrastat_generator/__main__.py
+          python -c "from pathlib import Path; from intrastat_generator.naming import build_release_exe_name; Path('dist/intrastat-generator.exe').rename(Path('dist') / build_release_exe_name('$env:INTRASTAT_GENERATOR_VERSION'))"
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
