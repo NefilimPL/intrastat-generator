@@ -45,6 +45,24 @@ def test_assets_find_bundled_icon_files(tmp_path: Path, monkeypatch):
     assert assets.app_icon_ico == app_ico
 
 
+def test_assets_prefer_bundled_icons_over_external_folder(tmp_path: Path, monkeypatch):
+    from intrastat_generator.assets import AppAssets
+
+    app_icon_dir = tmp_path / "app" / "Icon"
+    bundle_icon_dir = tmp_path / "bundle" / "Icon"
+    app_icon_dir.mkdir(parents=True)
+    bundle_icon_dir.mkdir(parents=True)
+    external_app_icon = app_icon_dir / "icon.png"
+    bundled_app_icon = bundle_icon_dir / "icon.png"
+    external_app_icon.write_bytes(b"external")
+    bundled_app_icon.write_bytes(b"bundled")
+    monkeypatch.setattr(sys, "_MEIPASS", str(tmp_path / "bundle"), raising=False)
+
+    assets = AppAssets(tmp_path / "app")
+
+    assert assets.app_icon_png == bundled_app_icon
+
+
 def test_assets_return_none_when_icon_file_is_missing(tmp_path: Path):
     from intrastat_generator.assets import AppAssets
 

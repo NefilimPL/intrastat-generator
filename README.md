@@ -2,6 +2,43 @@
 
 Desktop/CLI generator plikow XLSX do importu INTRASTAT.
 
+## Informacje o projekcie
+
+- Nazwa pakietu: `intrastat-generator`
+- Aplikacja: Generator INTRASTAT XLSX
+- Opis: Generator XLSX INTRASTAT
+- Autorzy: NefilimPL and contributors
+- Licencja: MIT
+- Repozytorium: https://github.com/NefilimPL/intrastat-generator
+
+Repozytorium prywatne jest traktowane w GUI jako niedostepne publicznie. Po
+upublicznieniu ten sam adres bedzie otwierany z ikony GitHub w GUI i bedzie
+uzywany do sprawdzania publicznych release.
+
+## GUI
+
+GUI pokazuje ikone aplikacji z `Icon/icon.png` oraz ikone GitHub z
+`Icon/github.png`. Ikona GitHub jest klikalna: dla publicznego repozytorium
+otwiera strone repo, a dla prywatnego lub niedostepnego repo pokazuje komunikat.
+
+Przycisk `Info` pokazuje podstawowe informacje o projekcie, aktualna wersje,
+status repozytorium, status aktualizacji i ostatnio pobrany plik aktualizacji.
+
+## Aktualizacje
+
+Aplikacja sprawdza publiczne GitHub API:
+
+- `repos/NefilimPL/intrastat-generator` do wykrycia, czy repozytorium jest
+  publiczne;
+- `repos/NefilimPL/intrastat-generator/releases/latest` do wykrycia najnowszego
+  release.
+
+Przycisk `Update` jest widoczny tylko wtedy, gdy publiczny release jest nowszy
+od aktualnej wersji i zawiera plik `.exe` dla Windows. Klikniecie pobiera EXE do
+folderu `aktualizacje` obok uruchomionego programu. Aplikacja nie podmienia
+samej siebie w locie; po pobraniu trzeba zamknac aktualny program i uruchomic
+pobrany plik.
+
 ## Uruchomienie lokalne
 
 ```powershell
@@ -19,6 +56,8 @@ python -m intrastat_generator --input intrastat.xml --tariff Taryfa/taryfa.txt -
 
 Release jest tworzony z tagow `v*`, np. `v3.4.0`.
 Artefakt ma nazwe `Intrastat-Generator_<tag>-<branch>_Windows_x64.exe`.
+Build EXE uzywa `Icon/icon.ico` jako ikony pliku oraz bundluje folder `Icon`,
+zeby GUI mialo ikony takze po skopiowaniu pojedynczego EXE do innego folderu.
 
 Workflow najpierw sprawdza self-hosted runner `Windows`/`X64`. GitHub wymaga
 uprawnienia `Administration: read` do API listowania runnerow, dlatego dla

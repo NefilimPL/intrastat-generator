@@ -28,10 +28,11 @@ class AppAssets:
         return None
 
     def _roots(self) -> list[Path]:
-        roots = [self.app_dir]
+        roots = []
         bundle_dir = getattr(sys, "_MEIPASS", "")
         if bundle_dir:
             roots.append(Path(bundle_dir))
+        roots.append(self.app_dir)
 
         unique: dict[str, Path] = {}
         for root in roots:
