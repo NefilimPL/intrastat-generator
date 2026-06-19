@@ -10,7 +10,7 @@ from .dictionaries import DictionaryLoader
 from .models import DictionaryData
 from .naming import build_xlsx_filename
 from .parser import IntrastatXmlParser
-from .paths import ensure_dirs, format_config_path, get_app_dir, resolve_path, select_tariff_path
+from .paths import ensure_dirs, format_config_path, get_app_dir, resolve_path, select_config_dir, select_tariff_path
 from .tariff import TariffLoader
 from .text import norm_text, safe_float
 from .transport import RouteCostManager
@@ -19,15 +19,26 @@ from .workbook import WorkbookBuilder
 class GeneratorService:
     def __init__(self, base_dir: Optional[Path] = None):
         self.base_dir = base_dir or get_app_dir()
-        self.config_path = self.base_dir / CONFIG_FILE
+        self.config_dir = select_config_dir(self.base_dir)
+        self.config_path = self.config_dir / CONFIG_FILE
         self.config = load_json(self.config_path, DEFAULT_CONFIG)
-        ensure_dirs(self.base_dir, self.config)
+        self.refresh_resource_paths()
 
     def save_config(self) -> None:
         save_json(self.config_path, self.config)
 
+    def refresh_resource_paths(self) -> None:
+        original_config = self.config.copy()
+        ensure_dirs(self.base_dir, self.config, self.config_dir)
+        configured_tariff = norm_text(self.config.get("tariff_path", ""))
+        tariff = select_tariff_path(self.base_dir, configured_tariff, include_bundle=False)
+        if tariff is not None:
+            self.config["tariff_path"] = format_config_path(tariff)
+        if self.config != original_config:
+            self.save_config()
+
     def route_costs_path(self) -> Path:
-        return resolve_path(self.config.get("transport_costs_file", ROUTE_COSTS_FILE), self.base_dir)
+        return resolve_path(self.config.get("transport_costs_file", ROUTE_COSTS_FILE), self.config_dir)
 
     def load_route_cost_config(self) -> Dict[str, Any]:
         manager = RouteCostManager(self.route_costs_path())
@@ -48,7 +59,7 @@ class GeneratorService:
 
     def guess_tariff_path(self) -> str:
         configured = norm_text(self.config.get("tariff_path", ""))
-        tariff = select_tariff_path(self.base_dir, configured)
+        tariff = select_tariff_path(self.base_dir, configured, include_bundle=False)
         if tariff is not None:
             value = format_config_path(tariff)
             self.config["tariff_path"] = value
@@ -81,7 +92,7 @@ class GeneratorService:
         return selected
 
     def load_current_dicts(self) -> Dict[str, DictionaryData]:
-        paths = ensure_dirs(self.base_dir, self.config)
+        paths = ensure_dirs(self.base_dir, self.config, self.config_dir)
         return DictionaryLoader(self.base_dir, paths["dict"]).load()
 
     def dict_codes_for_gui(self, code: str) -> List[str]:
@@ -108,7 +119,7 @@ class GeneratorService:
         self.save_config()
         run_config = self.config.copy()
         run_config["tariff_year"] = effective_tariff_year
-        paths = ensure_dirs(self.base_dir, self.config)
+        paths = ensure_dirs(self.base_dir, self.config, self.config_dir)
 
         if progress:
             progress(10, "Wczytywanie słowników XML...")

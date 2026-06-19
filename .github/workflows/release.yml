@@ -164,12 +164,50 @@ jobs:
             ]
           )
           "@ | Set-Content -Path build/version_info.txt -Encoding UTF8
+      - name: Stage bundled resources
+        run: |
+          $ErrorActionPreference = "Stop"
+          $resourceRoot = "build/pyinstaller-resources"
+          Remove-Item -Recurse -Force -Path $resourceRoot -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $resourceRoot | Out-Null
+          function Copy-MissingTree {
+            param(
+              [string] $Source,
+              [string] $Destination
+            )
+            if (-not (Test-Path -LiteralPath $Source -PathType Container)) {
+              return
+            }
+            New-Item -ItemType Directory -Force -Path $Destination | Out-Null
+            $sourcePath = (Resolve-Path -LiteralPath $Source).Path.TrimEnd([char[]]"\/")
+            Get-ChildItem -LiteralPath $Source -Recurse -File | ForEach-Object {
+              $relative = $_.FullName.Substring($sourcePath.Length).TrimStart([char[]]"\/")
+              $target = Join-Path $Destination $relative
+              if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
+                New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
+                Copy-Item -LiteralPath $_.FullName -Destination $target
+              }
+            }
+          }
+          $dictionarySources = @(Get-ChildItem -LiteralPath . -Directory |
+            Where-Object {
+              @(Get-ChildItem -LiteralPath $_.FullName -Recurse -File -Filter "slownik*.xml" -ErrorAction SilentlyContinue).Count -gt 0
+            })
+          foreach ($source in $dictionarySources) {
+            Copy-MissingTree -Source $source.FullName -Destination "$resourceRoot/Slowniki"
+          }
+          $stagedDictionaryFiles = @(Get-ChildItem -LiteralPath "$resourceRoot/Slowniki" -Recurse -File -Filter "slownik*.xml" -ErrorAction SilentlyContinue)
+          if ($stagedDictionaryFiles.Count -eq 0) {
+            throw "Bundled dictionary XML files were not staged. Check repository dictionary folder contents before building the EXE."
+          }
+          foreach ($source in @("Taryfa", "taryfa")) {
+            Copy-MissingTree -Source $source -Destination "$resourceRoot/Taryfa"
+          }
       - name: Build EXE
         run: |
           $addData = @()
-          if (Test-Path "Słowniki") { $addData += @("--add-data", "Słowniki;Słowniki") }
-          if (Test-Path "Slowniki") { $addData += @("--add-data", "Slowniki;Slowniki") }
-          if (Test-Path "Taryfa") { $addData += @("--add-data", "Taryfa;Taryfa") }
+          if (Test-Path "build/pyinstaller-resources/Slowniki") { $addData += @("--add-data", "build/pyinstaller-resources/Slowniki;Slowniki") }
+          if (Test-Path "build/pyinstaller-resources/Taryfa") { $addData += @("--add-data", "build/pyinstaller-resources/Taryfa;Taryfa") }
           & "$env:PYTHON_EXE" -m PyInstaller --onefile --windowed --name intrastat-generator --paths src --version-file build/version_info.txt @addData src/intrastat_generator/__main__.py
           & "$env:PYTHON_EXE" -c "from pathlib import Path; from intrastat_generator.naming import build_release_exe_name; Path('dist/intrastat-generator.exe').rename(Path('dist') / build_release_exe_name('$env:INTRASTAT_GENERATOR_VERSION'))"
       - name: Publish release
@@ -290,12 +328,50 @@ jobs:
             ]
           )
           "@ | Set-Content -Path build/version_info.txt -Encoding UTF8
+      - name: Stage bundled resources
+        run: |
+          $ErrorActionPreference = "Stop"
+          $resourceRoot = "build/pyinstaller-resources"
+          Remove-Item -Recurse -Force -Path $resourceRoot -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $resourceRoot | Out-Null
+          function Copy-MissingTree {
+            param(
+              [string] $Source,
+              [string] $Destination
+            )
+            if (-not (Test-Path -LiteralPath $Source -PathType Container)) {
+              return
+            }
+            New-Item -ItemType Directory -Force -Path $Destination | Out-Null
+            $sourcePath = (Resolve-Path -LiteralPath $Source).Path.TrimEnd([char[]]"\/")
+            Get-ChildItem -LiteralPath $Source -Recurse -File | ForEach-Object {
+              $relative = $_.FullName.Substring($sourcePath.Length).TrimStart([char[]]"\/")
+              $target = Join-Path $Destination $relative
+              if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
+                New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
+                Copy-Item -LiteralPath $_.FullName -Destination $target
+              }
+            }
+          }
+          $dictionarySources = @(Get-ChildItem -LiteralPath . -Directory |
+            Where-Object {
+              @(Get-ChildItem -LiteralPath $_.FullName -Recurse -File -Filter "slownik*.xml" -ErrorAction SilentlyContinue).Count -gt 0
+            })
+          foreach ($source in $dictionarySources) {
+            Copy-MissingTree -Source $source.FullName -Destination "$resourceRoot/Slowniki"
+          }
+          $stagedDictionaryFiles = @(Get-ChildItem -LiteralPath "$resourceRoot/Slowniki" -Recurse -File -Filter "slownik*.xml" -ErrorAction SilentlyContinue)
+          if ($stagedDictionaryFiles.Count -eq 0) {
+            throw "Bundled dictionary XML files were not staged. Check repository dictionary folder contents before building the EXE."
+          }
+          foreach ($source in @("Taryfa", "taryfa")) {
+            Copy-MissingTree -Source $source -Destination "$resourceRoot/Taryfa"
+          }
       - name: Build EXE
         run: |
           $addData = @()
-          if (Test-Path "Słowniki") { $addData += @("--add-data", "Słowniki;Słowniki") }
-          if (Test-Path "Slowniki") { $addData += @("--add-data", "Slowniki;Slowniki") }
-          if (Test-Path "Taryfa") { $addData += @("--add-data", "Taryfa;Taryfa") }
+          if (Test-Path "build/pyinstaller-resources/Slowniki") { $addData += @("--add-data", "build/pyinstaller-resources/Slowniki;Slowniki") }
+          if (Test-Path "build/pyinstaller-resources/Taryfa") { $addData += @("--add-data", "build/pyinstaller-resources/Taryfa;Taryfa") }
           python -m PyInstaller --onefile --windowed --name intrastat-generator --paths src --version-file build/version_info.txt @addData src/intrastat_generator/__main__.py
           python -c "from pathlib import Path; from intrastat_generator.naming import build_release_exe_name; Path('dist/intrastat-generator.exe').rename(Path('dist') / build_release_exe_name('$env:INTRASTAT_GENERATOR_VERSION'))"
       - name: Publish release
