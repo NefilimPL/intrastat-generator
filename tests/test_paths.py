@@ -86,9 +86,33 @@ def test_ensure_dirs_copies_bundled_dictionary_folder_when_no_external_files(tmp
 
     paths = ensure_dirs(app_dir, {"dict_dir": "slowniki", "output_dir": "out"})
 
-    copied = app_dir / "Słowniki" / "slownik002.xml"
+    copied = app_dir / "slowniki" / "slownik002.xml"
+    child_dirs = {path.name for path in app_dir.iterdir() if path.is_dir()}
     assert copied.exists()
-    assert paths["dict"] == app_dir / "Słowniki"
+    assert "slowniki" in child_dirs
+    assert "Słowniki" not in child_dirs
+    assert paths["dict"] == app_dir / "slowniki"
+
+
+def test_ensure_dirs_copies_staged_pyinstaller_dictionary_files_to_default_slowniki(tmp_path: Path, monkeypatch):
+    app_dir = tmp_path / "app"
+    app_dir.mkdir()
+    bundle_dir = tmp_path / "bundle"
+    bundled_dict_dir = bundle_dir / "Slowniki"
+    bundled_dict_dir.mkdir(parents=True)
+    (bundled_dict_dir / "slownik002.xml").write_text("<Slownik Kod='002' />", encoding="utf-8")
+    bundled_tariff_dir = bundle_dir / "Taryfa"
+    bundled_tariff_dir.mkdir()
+    (bundled_tariff_dir / "taryfa.txt").write_text("", encoding="utf-8")
+    monkeypatch.setattr(sys, "_MEIPASS", str(bundle_dir), raising=False)
+
+    paths = ensure_dirs(app_dir, {"dict_dir": "slowniki", "output_dir": "out"})
+
+    child_dirs = {path.name for path in app_dir.iterdir() if path.is_dir()}
+    assert (app_dir / "slowniki" / "slownik002.xml").exists()
+    assert "slowniki" in child_dirs
+    assert "Slowniki" not in child_dirs
+    assert paths["dict"] == app_dir / "slowniki"
 
 
 def test_service_copies_bundled_tariff_folder_and_uses_local_copy(tmp_path: Path, monkeypatch):

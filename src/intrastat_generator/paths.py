@@ -114,6 +114,7 @@ def _materialize_bundled_folder(
     base_dir: Path,
     folder_names: Sequence[str],
     contains_files: Any,
+    default_target_name: str | None = None,
 ) -> None:
     bundle_dir = _bundle_dir()
     if bundle_dir is None:
@@ -121,12 +122,16 @@ def _materialize_bundled_folder(
     sources = [bundle_dir / name for name in folder_names if contains_files(bundle_dir / name)]
     if not sources:
         return
-    existing_targets = [base_dir / name for name in folder_names if (base_dir / name).is_dir()]
+    existing_targets = []
+    for name in folder_names:
+        target = _named_child_dir(base_dir, name)
+        if target.is_dir():
+            existing_targets.append(target)
     target = next((path for path in existing_targets if contains_files(path)), None)
     if target is None and existing_targets:
         target = existing_targets[0]
     if target is None:
-        target = base_dir / sources[0].name
+        target = base_dir / (default_target_name or sources[0].name)
     for source in sources:
         _copy_missing_tree(source, target)
 
@@ -134,7 +139,7 @@ def _materialize_bundled_folder(
 def materialize_bundled_resources(base_dir: Path) -> None:
     if shared_resource_dir(base_dir) is not None:
         return
-    _materialize_bundled_folder(base_dir, DICTIONARY_DIR_CANDIDATES, directory_contains_dictionaries)
+    _materialize_bundled_folder(base_dir, DICTIONARY_DIR_CANDIDATES, directory_contains_dictionaries, DICT_DIR_NAME)
     _materialize_bundled_folder(base_dir, TARIFF_DIR_CANDIDATES, directory_contains_tariff)
 
 
