@@ -21,3 +21,17 @@ def test_package_metadata_declares_mit_license_and_authors():
 
     assert project["license"]["text"] == "MIT"
     assert project["authors"] == [{"name": "NefilimPL and contributors"}]
+
+
+def test_project_metadata_contains_repository_information():
+    from intrastat_generator.project import PROJECT
+
+    assert PROJECT.name == "intrastat-generator"
+    assert PROJECT.display_name == "Generator INTRASTAT XLSX"
+    assert PROJECT.repository_owner == "NefilimPL"
+    assert PROJECT.repository_name == "intrastat-generator"
+    assert PROJECT.repository_slug == "NefilimPL/intrastat-generator"
+    assert PROJECT.repository_url == "https://github.com/NefilimPL/intrastat-generator"
+    assert PROJECT.description == "Generator XLSX INTRASTAT"
+    assert PROJECT.authors == "NefilimPL and contributors"
+    assert PROJECT.license == "MIT"
