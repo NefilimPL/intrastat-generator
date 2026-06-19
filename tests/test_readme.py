@@ -21,3 +21,13 @@ def test_readme_documents_project_repository_and_updates():
     assert "Update" in text
     assert "releases/latest" in text
     assert "Repozytorium prywatne" in text
+
+
+def test_readme_explains_intrastat_purpose_and_links_gus():
+    text = readme_text()
+
+    assert "Do czego sluzy" in text
+    assert "INTRASTAT" in text
+    assert "XLSX" in text
+    assert "XML" in text
+    assert "https://stat.gov.pl/badania-statystyczne/sprawozdawczosc/intrastat/elektroniczne-zgloszenia-intrastat/" in text

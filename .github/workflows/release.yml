@@ -221,7 +221,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/Intrastat-Generator_*_Windows_x64.exe
-          generate_release_notes: true
           draft: true
       - name: Upload artifact
         continue-on-error: true
@@ -391,7 +390,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/Intrastat-Generator_*_Windows_x64.exe
-          generate_release_notes: true
           draft: true
       - name: Upload artifact
         continue-on-error: true

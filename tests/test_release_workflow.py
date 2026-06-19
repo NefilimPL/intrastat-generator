@@ -37,6 +37,19 @@ def test_release_publish_steps_keep_release_as_draft():
         assert "draft: true" in step_body
 
 
+def test_release_publish_steps_do_not_regenerate_release_notes():
+    workflow = release_workflow_text()
+    publish_steps = workflow.split("- name: Publish release")[1:]
+
+    assert publish_steps
+    for publish_step in publish_steps:
+        step_body = publish_step.split("- name: Upload artifact", 1)[0]
+        assert "generate_release_notes" not in step_body
+        assert "append_body" not in step_body
+        assert "body:" not in step_body
+        assert "body_path:" not in step_body
+
+
 def test_windows_build_jobs_run_tests_before_building_exe():
     workflow = release_workflow_text()
 

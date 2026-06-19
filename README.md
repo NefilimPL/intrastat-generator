@@ -1,6 +1,22 @@
 # Generator INTRASTAT XLSX
 
-Desktop/CLI generator plikow XLSX do importu INTRASTAT.
+Desktop/CLI generator plikow XLSX do przygotowania danych INTRASTAT.
+
+## Do czego sluzy
+
+Program pomaga przygotowac arkusz XLSX z pozycjami do zgloszen INTRASTAT na
+podstawie plikow XML z deklaracji lub systemu Subiekt. Wczytuje dane towarowe,
+slowniki XML oraz taryfe CN, a potem generuje plik XLSX z kolumnami potrzebnymi
+do dalszej kontroli i importu/przepisania danych do procesu zgloszenia.
+
+INTRASTAT to sprawozdawczosc dotyczaca obrotu towarowego z krajami Unii
+Europejskiej. Oficjalne informacje, formularze i program do elektronicznych
+zgloszen INTRASTAT publikuje GUS:
+https://stat.gov.pl/badania-statystyczne/sprawozdawczosc/intrastat/elektroniczne-zgloszenia-intrastat/
+
+Ten projekt nie zastepuje oficjalnego systemu GUS. Jego zadaniem jest
+przyspieszenie przygotowania i weryfikacji danych przed zlozeniem zgloszenia w
+oficjalnym narzedziu.
 
 ## Informacje o projekcie
 
@@ -77,6 +93,10 @@ Release jest tworzony jako draft (`draft: true`), zeby EXE byl dodany przed
 upublicznieniem. Przy ochronie przed edycja opublikowanych release'ow nalezy
 najpierw pozwolic workflow utworzyc lub uzupelnic draft, a dopiero potem
 opublikowac go recznie w GitHub.
+
+Workflow tylko dodaje plik EXE do release. Nie wlacza automatycznego
+`generate_release_notes`, zeby nie nadpisywac ani nie dublowac recznie wpisanego
+opisu release, w tym automatycznego fragmentu `Full Changelog`.
 
 Do tworzenia draft release i dodawania EXE wystarcza standardowy `GITHUB_TOKEN`
 z `contents: write`, o ile ustawienia repozytorium pozwalaja GitHub Actions
