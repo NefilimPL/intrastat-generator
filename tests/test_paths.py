@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from intrastat_generator.paths import ensure_dirs, format_config_path, get_app_dir, select_dictionary_dir
+from intrastat_generator.paths import ensure_dirs, format_config_path, get_app_dir, log_exception, select_dictionary_dir
 from intrastat_generator.service import GeneratorService
 from intrastat_generator.gui import format_gui_path
 
@@ -55,6 +55,24 @@ def test_service_guesses_tariff_inside_taryfa_folder(tmp_path: Path):
 
     assert service.guess_tariff_path() == tariff.as_posix()
     assert service.config["tariff_path"] == tariff.as_posix()
+
+
+def test_service_uses_istat_shared_slowniki_folder_for_resources_and_config(tmp_path: Path):
+    shared_dir = tmp_path / "slowniki"
+    shared_dir.mkdir()
+    (shared_dir / "slownik002.xml").write_text("<Slownik Kod='002' />", encoding="utf-8")
+    tariff = shared_dir / "taryfa.txt"
+    tariff.write_text("", encoding="utf-8")
+
+    service = GeneratorService(tmp_path)
+
+    config_dir = tmp_path / "Intrastat generator config"
+    assert service.config_path == config_dir / "config.json"
+    assert service.route_costs_path() == config_dir / "koszty_transportu.json"
+    assert service.config["dict_dir"] == shared_dir.as_posix()
+    assert service.guess_tariff_path() == tariff.as_posix()
+    assert not (tmp_path / "Słowniki").exists()
+    assert not (tmp_path / "Taryfa").exists()
 
 
 def test_ensure_dirs_copies_bundled_dictionary_folder_when_no_external_files(tmp_path: Path, monkeypatch):
@@ -126,3 +144,39 @@ def test_ensure_dirs_copies_only_missing_bundled_tariff_files(tmp_path: Path, mo
 
     assert existing_tariff.read_text(encoding="utf-8") == "custom tariff"
     assert (existing_tariff_dir / "taryfa(1).txt").read_text(encoding="utf-8") == "missing tariff"
+
+
+def test_ensure_dirs_does_not_copy_bundled_resources_when_istat_slowniki_has_resources(tmp_path: Path, monkeypatch):
+    app_dir = tmp_path / "app"
+    shared_dir = app_dir / "slowniki"
+    shared_dir.mkdir(parents=True)
+    (shared_dir / "slownik002.xml").write_text("<Slownik Kod='002' />", encoding="utf-8")
+    (shared_dir / "taryfa.txt").write_text("", encoding="utf-8")
+    bundle_dir = tmp_path / "bundle"
+    bundled_dict_dir = bundle_dir / "Słowniki"
+    bundled_dict_dir.mkdir(parents=True)
+    (bundled_dict_dir / "slownik004.xml").write_text("<Slownik Kod='004' />", encoding="utf-8")
+    bundled_tariff_dir = bundle_dir / "Taryfa"
+    bundled_tariff_dir.mkdir(parents=True)
+    (bundled_tariff_dir / "taryfa(1).txt").write_text("", encoding="utf-8")
+    monkeypatch.setattr(sys, "_MEIPASS", str(bundle_dir), raising=False)
+
+    paths = ensure_dirs(app_dir, {"dict_dir": "slowniki", "output_dir": "out"})
+
+    config_dir = app_dir / "Intrastat generator config"
+    assert paths["dict"] == shared_dir
+    assert paths["logs"] == config_dir / "logi"
+    assert not (shared_dir / "slownik004.xml").exists()
+    assert not (app_dir / "Słowniki").exists()
+    assert not (app_dir / "Taryfa").exists()
+
+
+def test_log_exception_uses_config_folder_in_istat_mode(tmp_path: Path):
+    shared_dir = tmp_path / "slowniki"
+    shared_dir.mkdir()
+    (shared_dir / "slownik002.xml").write_text("<Slownik Kod='002' />", encoding="utf-8")
+    (shared_dir / "taryfa.txt").write_text("", encoding="utf-8")
+
+    log_path = log_exception(tmp_path, RuntimeError("boom"))
+
+    assert log_path.parent == tmp_path / "Intrastat generator config" / "logi"

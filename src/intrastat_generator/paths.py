@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Sequence
 
-from .config import DICT_DIR_NAME, LOG_DIR_NAME, OUTPUT_DIR_NAME
+from .config import CONFIG_DIR_NAME, DICT_DIR_NAME, LOG_DIR_NAME, OUTPUT_DIR_NAME
 from .naming import now_stamp
 
 DICTIONARY_DIR_CANDIDATES = ("Słowniki", "Slowniki", "słowniki", "slowniki")
@@ -44,6 +44,19 @@ def _unique_paths(paths: Iterable[Path]) -> List[Path]:
     return list(unique.values())
 
 
+def _named_child_dir(parent: Path, name: str) -> Path:
+    candidate = parent / name
+    if not parent.exists() or not parent.is_dir():
+        return candidate
+    try:
+        for child in parent.iterdir():
+            if child.is_dir() and child.name.lower() == name.lower():
+                return child
+    except OSError:
+        return candidate
+    return candidate
+
+
 def _resource_roots(base_dir: Path) -> List[Path]:
     roots = [base_dir]
     bundle_dir = _bundle_dir()
@@ -63,11 +76,25 @@ def directory_contains_dictionaries(path: Path) -> bool:
     return any(p.is_file() and p.name.lower().startswith("slownik") for p in path.rglob("*.xml"))
 
 
-def _directory_contains_tariff(path: Path) -> bool:
+def directory_contains_tariff(path: Path) -> bool:
     if not path.exists() or not path.is_dir():
         return False
     names = {name.lower() for name in TARIFF_FILE_CANDIDATES}
     return any(p.is_file() and p.name.lower() in names for p in path.rglob("*.txt"))
+
+
+def shared_resource_dir(base_dir: Path) -> Path | None:
+    for name in DICTIONARY_DIR_CANDIDATES:
+        candidate = _named_child_dir(base_dir, name)
+        if directory_contains_dictionaries(candidate) and directory_contains_tariff(candidate):
+            return candidate
+    return None
+
+
+def select_config_dir(base_dir: Path) -> Path:
+    if shared_resource_dir(base_dir) is not None:
+        return base_dir / CONFIG_DIR_NAME
+    return base_dir
 
 
 def _copy_missing_tree(source: Path, target: Path) -> None:
@@ -105,8 +132,10 @@ def _materialize_bundled_folder(
 
 
 def materialize_bundled_resources(base_dir: Path) -> None:
+    if shared_resource_dir(base_dir) is not None:
+        return
     _materialize_bundled_folder(base_dir, DICTIONARY_DIR_CANDIDATES, directory_contains_dictionaries)
-    _materialize_bundled_folder(base_dir, TARIFF_DIR_CANDIDATES, _directory_contains_tariff)
+    _materialize_bundled_folder(base_dir, TARIFF_DIR_CANDIDATES, directory_contains_tariff)
 
 
 def _dictionary_candidates(base_dir: Path, configured: str | Path, roots: Sequence[Path]) -> List[Path]:
@@ -116,10 +145,10 @@ def _dictionary_candidates(base_dir: Path, configured: str | Path, roots: Sequen
         configured_path = resolve_path(configured_text, base_dir)
         candidates.append(configured_path)
         for name in DICTIONARY_DIR_CANDIDATES:
-            candidates.append(configured_path / name)
+            candidates.append(_named_child_dir(configured_path, name))
     for root in roots:
         for name in DICTIONARY_DIR_CANDIDATES:
-            candidates.append(root / name)
+            candidates.append(_named_child_dir(root, name))
     return _unique_paths(candidates)
 
 
@@ -137,12 +166,21 @@ def _tariff_candidates(base_dir: Path, configured: str | Path, roots: Sequence[P
     configured_text = str(configured or "").strip().strip('"')
     if configured_text:
         candidates.append(resolve_path(configured_text, base_dir))
+    shared_dir = shared_resource_dir(base_dir)
+    if shared_dir is not None:
+        for name in TARIFF_FILE_CANDIDATES:
+            candidates.append(shared_dir / name)
     for root in roots:
         for name in TARIFF_FILE_CANDIDATES:
             candidates.append(root / name)
-        for folder in TARIFF_DIR_CANDIDATES:
+        for folder in DICTIONARY_DIR_CANDIDATES:
+            folder_path = _named_child_dir(root, folder)
             for name in TARIFF_FILE_CANDIDATES:
-                candidates.append(root / folder / name)
+                candidates.append(folder_path / name)
+        for folder in TARIFF_DIR_CANDIDATES:
+            folder_path = _named_child_dir(root, folder)
+            for name in TARIFF_FILE_CANDIDATES:
+                candidates.append(folder_path / name)
     return _unique_paths(candidates)
 
 
@@ -153,15 +191,17 @@ def select_tariff_path(base_dir: Path, configured: str | Path = "") -> Path | No
     return None
 
 
-def ensure_dirs(base_dir: Path, config: Dict[str, Any]) -> Dict[str, Path]:
+def ensure_dirs(base_dir: Path, config: Dict[str, Any], config_dir: Path | None = None) -> Dict[str, Path]:
+    config_dir = config_dir or select_config_dir(base_dir)
     materialize_bundled_resources(base_dir)
     dict_dir = select_dictionary_dir(base_dir, config.get("dict_dir") or DICT_DIR_NAME)
     config["dict_dir"] = format_config_path(dict_dir)
     paths = {
         "base": base_dir,
+        "config": config_dir,
         "dict": dict_dir,
         "output": resolve_path(config.get("output_dir") or OUTPUT_DIR_NAME, base_dir),
-        "logs": base_dir / LOG_DIR_NAME,
+        "logs": config_dir / LOG_DIR_NAME,
     }
     for p in paths.values():
         p.mkdir(parents=True, exist_ok=True)
@@ -169,7 +209,7 @@ def ensure_dirs(base_dir: Path, config: Dict[str, Any]) -> Dict[str, Path]:
 
 
 def log_exception(base_dir: Path, exc: BaseException) -> Path:
-    log_dir = base_dir / LOG_DIR_NAME
+    log_dir = select_config_dir(base_dir) / LOG_DIR_NAME
     log_dir.mkdir(parents=True, exist_ok=True)
     p = log_dir / f"blad_{now_stamp()}.log"
     with p.open("w", encoding="utf-8") as f:

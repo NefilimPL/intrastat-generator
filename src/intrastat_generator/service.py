@@ -10,7 +10,7 @@ from .dictionaries import DictionaryLoader
 from .models import DictionaryData
 from .naming import build_xlsx_filename
 from .parser import IntrastatXmlParser
-from .paths import ensure_dirs, format_config_path, get_app_dir, resolve_path, select_tariff_path
+from .paths import ensure_dirs, format_config_path, get_app_dir, resolve_path, select_config_dir, select_tariff_path
 from .tariff import TariffLoader
 from .text import norm_text, safe_float
 from .transport import RouteCostManager
@@ -19,15 +19,16 @@ from .workbook import WorkbookBuilder
 class GeneratorService:
     def __init__(self, base_dir: Optional[Path] = None):
         self.base_dir = base_dir or get_app_dir()
-        self.config_path = self.base_dir / CONFIG_FILE
+        self.config_dir = select_config_dir(self.base_dir)
+        self.config_path = self.config_dir / CONFIG_FILE
         self.config = load_json(self.config_path, DEFAULT_CONFIG)
-        ensure_dirs(self.base_dir, self.config)
+        ensure_dirs(self.base_dir, self.config, self.config_dir)
 
     def save_config(self) -> None:
         save_json(self.config_path, self.config)
 
     def route_costs_path(self) -> Path:
-        return resolve_path(self.config.get("transport_costs_file", ROUTE_COSTS_FILE), self.base_dir)
+        return resolve_path(self.config.get("transport_costs_file", ROUTE_COSTS_FILE), self.config_dir)
 
     def load_route_cost_config(self) -> Dict[str, Any]:
         manager = RouteCostManager(self.route_costs_path())
@@ -81,7 +82,7 @@ class GeneratorService:
         return selected
 
     def load_current_dicts(self) -> Dict[str, DictionaryData]:
-        paths = ensure_dirs(self.base_dir, self.config)
+        paths = ensure_dirs(self.base_dir, self.config, self.config_dir)
         return DictionaryLoader(self.base_dir, paths["dict"]).load()
 
     def dict_codes_for_gui(self, code: str) -> List[str]:
@@ -108,7 +109,7 @@ class GeneratorService:
         self.save_config()
         run_config = self.config.copy()
         run_config["tariff_year"] = effective_tariff_year
-        paths = ensure_dirs(self.base_dir, self.config)
+        paths = ensure_dirs(self.base_dir, self.config, self.config_dir)
 
         if progress:
             progress(10, "Wczytywanie słowników XML...")

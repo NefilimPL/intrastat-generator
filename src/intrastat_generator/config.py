@@ -13,6 +13,7 @@ def app_name(version: str) -> str:
     return f"{APP_NAME_BASE} {version}"
 
 CONFIG_FILE = "config.json"
+CONFIG_DIR_NAME = "Intrastat generator config"
 OUTPUT_DIR_NAME = "wygenerowane_xlsx"
 DICT_DIR_NAME = "slowniki"
 LOG_DIR_NAME = "logi"
