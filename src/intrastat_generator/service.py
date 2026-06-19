@@ -22,10 +22,20 @@ class GeneratorService:
         self.config_dir = select_config_dir(self.base_dir)
         self.config_path = self.config_dir / CONFIG_FILE
         self.config = load_json(self.config_path, DEFAULT_CONFIG)
-        ensure_dirs(self.base_dir, self.config, self.config_dir)
+        self.refresh_resource_paths()
 
     def save_config(self) -> None:
         save_json(self.config_path, self.config)
+
+    def refresh_resource_paths(self) -> None:
+        original_config = self.config.copy()
+        ensure_dirs(self.base_dir, self.config, self.config_dir)
+        configured_tariff = norm_text(self.config.get("tariff_path", ""))
+        tariff = select_tariff_path(self.base_dir, configured_tariff, include_bundle=False)
+        if tariff is not None:
+            self.config["tariff_path"] = format_config_path(tariff)
+        if self.config != original_config:
+            self.save_config()
 
     def route_costs_path(self) -> Path:
         return resolve_path(self.config.get("transport_costs_file", ROUTE_COSTS_FILE), self.config_dir)
@@ -49,7 +59,7 @@ class GeneratorService:
 
     def guess_tariff_path(self) -> str:
         configured = norm_text(self.config.get("tariff_path", ""))
-        tariff = select_tariff_path(self.base_dir, configured)
+        tariff = select_tariff_path(self.base_dir, configured, include_bundle=False)
         if tariff is not None:
             value = format_config_path(tariff)
             self.config["tariff_path"] = value

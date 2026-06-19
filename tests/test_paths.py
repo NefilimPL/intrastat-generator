@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -75,6 +76,99 @@ def test_service_uses_istat_shared_slowniki_folder_for_resources_and_config(tmp_
     assert not (tmp_path / "Taryfa").exists()
 
 
+def test_service_refreshes_stale_absolute_resource_paths_after_move(tmp_path: Path):
+    old_dir = tmp_path / "old-install"
+    old_dict_dir = old_dir / "slowniki"
+    old_tariff = old_dir / "Taryfa" / "taryfa.txt"
+    new_dir = tmp_path / "new-install"
+    new_dict_dir = new_dir / "Słowniki"
+    new_tariff_dir = new_dir / "Taryfa"
+    new_dict_dir.mkdir(parents=True)
+    new_tariff_dir.mkdir()
+    (new_dict_dir / "slownik002.xml").write_text("<Slownik Kod='002' />", encoding="utf-8")
+    new_tariff = new_tariff_dir / "taryfa.txt"
+    new_tariff.write_text("", encoding="utf-8")
+    (new_dir / "config.json").write_text(
+        json.dumps(
+            {
+                "dict_dir": old_dict_dir.as_posix(),
+                "tariff_path": old_tariff.as_posix(),
+                "output_dir": "out",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    service = GeneratorService(new_dir)
+
+    assert service.config["dict_dir"] == new_dict_dir.as_posix()
+    assert service.config["tariff_path"] == new_tariff.as_posix()
+    saved_config = json.loads((new_dir / "config.json").read_text(encoding="utf-8"))
+    assert saved_config["dict_dir"] == new_dict_dir.as_posix()
+    assert saved_config["tariff_path"] == new_tariff.as_posix()
+    assert service.guess_tariff_path() == new_tariff.as_posix()
+    assert not old_dict_dir.exists()
+
+
+def test_select_dictionary_dir_uses_default_when_stale_absolute_path_has_no_files(tmp_path: Path):
+    old_dir = tmp_path / "old-install" / "slowniki"
+    new_dir = tmp_path / "new-install"
+    new_dir.mkdir()
+
+    assert select_dictionary_dir(new_dir, old_dir) == new_dir / "slowniki"
+
+
+def test_ensure_dirs_uses_existing_old_dictionary_path_before_copying_bundle(tmp_path: Path, monkeypatch):
+    old_dict_dir = tmp_path / "old-install" / "slowniki"
+    old_dict_dir.mkdir(parents=True)
+    (old_dict_dir / "slownik002.xml").write_text("<Slownik Kod='002' />", encoding="utf-8")
+    new_dir = tmp_path / "new-install"
+    new_dir.mkdir()
+    bundle_dir = tmp_path / "bundle"
+    bundled_dict_dir = bundle_dir / "Slowniki"
+    bundled_dict_dir.mkdir(parents=True)
+    (bundled_dict_dir / "slownik004.xml").write_text("<Slownik Kod='004' />", encoding="utf-8")
+    monkeypatch.setattr(sys, "_MEIPASS", str(bundle_dir), raising=False)
+
+    paths = ensure_dirs(new_dir, {"dict_dir": old_dict_dir.as_posix(), "output_dir": "out"})
+
+    assert paths["dict"] == old_dict_dir
+    assert not (new_dir / "slowniki").exists()
+    assert not (old_dict_dir / "slownik004.xml").exists()
+
+
+def test_service_uses_existing_old_tariff_path_before_copying_bundle(tmp_path: Path, monkeypatch):
+    old_tariff_dir = tmp_path / "old-install" / "Taryfa"
+    old_tariff_dir.mkdir(parents=True)
+    old_tariff = old_tariff_dir / "taryfa.txt"
+    old_tariff.write_text("", encoding="utf-8")
+    old_dict_dir = tmp_path / "old-install" / "slowniki"
+    old_dict_dir.mkdir()
+    (old_dict_dir / "slownik002.xml").write_text("<Slownik Kod='002' />", encoding="utf-8")
+    new_dir = tmp_path / "new-install"
+    new_dir.mkdir()
+    bundle_dir = tmp_path / "bundle"
+    bundled_tariff_dir = bundle_dir / "Taryfa"
+    bundled_tariff_dir.mkdir(parents=True)
+    (bundled_tariff_dir / "taryfa(1).txt").write_text("", encoding="utf-8")
+    monkeypatch.setattr(sys, "_MEIPASS", str(bundle_dir), raising=False)
+    (new_dir / "config.json").write_text(
+        json.dumps(
+            {
+                "dict_dir": old_dict_dir.as_posix(),
+                "tariff_path": old_tariff.as_posix(),
+                "output_dir": "out",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    service = GeneratorService(new_dir)
+
+    assert service.config["tariff_path"] == old_tariff.as_posix()
+    assert not (new_dir / "Taryfa").exists()
+
+
 def test_ensure_dirs_copies_bundled_dictionary_folder_when_no_external_files(tmp_path: Path, monkeypatch):
     app_dir = tmp_path / "app"
     app_dir.mkdir()
@@ -131,7 +225,7 @@ def test_service_copies_bundled_tariff_folder_and_uses_local_copy(tmp_path: Path
     assert service.guess_tariff_path() == tariff.as_posix()
 
 
-def test_ensure_dirs_copies_only_missing_bundled_dictionary_files(tmp_path: Path, monkeypatch):
+def test_ensure_dirs_does_not_copy_bundled_dictionary_files_when_local_dictionary_exists(tmp_path: Path, monkeypatch):
     app_dir = tmp_path / "app"
     existing_dict_dir = app_dir / "Słowniki"
     existing_dict_dir.mkdir(parents=True)
@@ -148,10 +242,10 @@ def test_ensure_dirs_copies_only_missing_bundled_dictionary_files(tmp_path: Path
 
     assert paths["dict"] == existing_dict_dir
     assert existing_dict.read_text(encoding="utf-8") == "custom dictionary"
-    assert (existing_dict_dir / "slownik004.xml").read_text(encoding="utf-8") == "missing dictionary"
+    assert not (existing_dict_dir / "slownik004.xml").exists()
 
 
-def test_ensure_dirs_copies_only_missing_bundled_tariff_files(tmp_path: Path, monkeypatch):
+def test_ensure_dirs_does_not_copy_bundled_tariff_files_when_local_tariff_exists(tmp_path: Path, monkeypatch):
     app_dir = tmp_path / "app"
     existing_tariff_dir = app_dir / "Taryfa"
     existing_tariff_dir.mkdir(parents=True)
@@ -167,7 +261,7 @@ def test_ensure_dirs_copies_only_missing_bundled_tariff_files(tmp_path: Path, mo
     ensure_dirs(app_dir, {"dict_dir": "slowniki", "output_dir": "out"})
 
     assert existing_tariff.read_text(encoding="utf-8") == "custom tariff"
-    assert (existing_tariff_dir / "taryfa(1).txt").read_text(encoding="utf-8") == "missing tariff"
+    assert not (existing_tariff_dir / "taryfa(1).txt").exists()
 
 
 def test_ensure_dirs_does_not_copy_bundled_resources_when_istat_slowniki_has_resources(tmp_path: Path, monkeypatch):

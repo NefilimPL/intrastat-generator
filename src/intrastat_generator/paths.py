@@ -57,10 +57,20 @@ def _named_child_dir(parent: Path, name: str) -> Path:
     return candidate
 
 
-def _resource_roots(base_dir: Path) -> List[Path]:
+def _path_is_inside(path: Path, parent: Path) -> bool:
+    path_abs = path.resolve() if path.exists() else path.absolute()
+    parent_abs = parent.resolve() if parent.exists() else parent.absolute()
+    try:
+        path_abs.relative_to(parent_abs)
+        return True
+    except ValueError:
+        return False
+
+
+def _resource_roots(base_dir: Path, include_bundle: bool = True) -> List[Path]:
     roots = [base_dir]
     bundle_dir = _bundle_dir()
-    if bundle_dir:
+    if include_bundle and bundle_dir:
         roots.append(bundle_dir)
     return _unique_paths(roots)
 
@@ -157,13 +167,16 @@ def _dictionary_candidates(base_dir: Path, configured: str | Path, roots: Sequen
     return _unique_paths(candidates)
 
 
-def select_dictionary_dir(base_dir: Path, configured: str | Path = DICT_DIR_NAME) -> Path:
-    roots = _resource_roots(base_dir)
+def select_dictionary_dir(base_dir: Path, configured: str | Path = DICT_DIR_NAME, include_bundle: bool = True) -> Path:
+    roots = _resource_roots(base_dir, include_bundle)
     candidates = _dictionary_candidates(base_dir, configured, roots)
     for candidate in candidates:
         if directory_contains_dictionaries(candidate):
             return candidate
-    return resolve_path(configured or DICT_DIR_NAME, base_dir)
+    fallback = resolve_path(configured or DICT_DIR_NAME, base_dir)
+    if fallback.is_absolute() and not _path_is_inside(fallback, base_dir):
+        return base_dir / DICT_DIR_NAME
+    return fallback
 
 
 def _tariff_candidates(base_dir: Path, configured: str | Path, roots: Sequence[Path]) -> List[Path]:
@@ -189,8 +202,8 @@ def _tariff_candidates(base_dir: Path, configured: str | Path, roots: Sequence[P
     return _unique_paths(candidates)
 
 
-def select_tariff_path(base_dir: Path, configured: str | Path = "") -> Path | None:
-    for candidate in _tariff_candidates(base_dir, configured, _resource_roots(base_dir)):
+def select_tariff_path(base_dir: Path, configured: str | Path = "", include_bundle: bool = True) -> Path | None:
+    for candidate in _tariff_candidates(base_dir, configured, _resource_roots(base_dir, include_bundle)):
         if candidate.exists() and candidate.is_file():
             return candidate
     return None
@@ -198,8 +211,12 @@ def select_tariff_path(base_dir: Path, configured: str | Path = "") -> Path | No
 
 def ensure_dirs(base_dir: Path, config: Dict[str, Any], config_dir: Path | None = None) -> Dict[str, Path]:
     config_dir = config_dir or select_config_dir(base_dir)
-    materialize_bundled_resources(base_dir)
-    dict_dir = select_dictionary_dir(base_dir, config.get("dict_dir") or DICT_DIR_NAME)
+    dict_dir = select_dictionary_dir(base_dir, config.get("dict_dir") or DICT_DIR_NAME, include_bundle=False)
+    if not directory_contains_dictionaries(dict_dir):
+        _materialize_bundled_folder(base_dir, DICTIONARY_DIR_CANDIDATES, directory_contains_dictionaries, DICT_DIR_NAME)
+        dict_dir = select_dictionary_dir(base_dir, config.get("dict_dir") or DICT_DIR_NAME, include_bundle=False)
+    if select_tariff_path(base_dir, config.get("tariff_path", ""), include_bundle=False) is None:
+        _materialize_bundled_folder(base_dir, TARIFF_DIR_CANDIDATES, directory_contains_tariff)
     config["dict_dir"] = format_config_path(dict_dir)
     paths = {
         "base": base_dir,
