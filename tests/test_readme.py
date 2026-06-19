@@ -23,6 +23,16 @@ def test_readme_documents_project_repository_and_updates():
     assert "Repozytorium prywatne" in text
 
 
+def test_readme_displays_project_badges():
+    text = readme_text()
+
+    assert "actions/workflows/release.yml/badge.svg" in text
+    assert "actions/workflows/release.yml" in text
+    assert "img.shields.io/github/v/release/NefilimPL/intrastat-generator" in text
+    assert "img.shields.io/github/license/NefilimPL/intrastat-generator" in text
+    assert "img.shields.io/badge/python-3.11%2B" in text
+
+
 def test_readme_explains_intrastat_purpose_and_links_gus():
     text = readme_text()
 

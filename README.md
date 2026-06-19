@@ -1,5 +1,10 @@
 # Generator INTRASTAT XLSX
 
+[![Testy i release](https://github.com/NefilimPL/intrastat-generator/actions/workflows/release.yml/badge.svg)](https://github.com/NefilimPL/intrastat-generator/actions/workflows/release.yml)
+[![Latest release](https://img.shields.io/github/v/release/NefilimPL/intrastat-generator?label=release&sort=semver)](https://github.com/NefilimPL/intrastat-generator/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/NefilimPL/intrastat-generator)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)](pyproject.toml)
+
 Desktop/CLI generator plikow XLSX do przygotowania danych INTRASTAT.
 
 ## Do czego sluzy
