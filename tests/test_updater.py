@@ -102,6 +102,72 @@ def test_repository_network_failure_is_unavailable():
     assert client.fetch_repository_visibility() == RepositoryVisibility.UNAVAILABLE
 
 
+def test_latest_update_retries_transient_repository_visibility_failure():
+    from intrastat_generator.updater import GitHubReleaseClient, UpdateStatus
+
+    release_payload = {
+        "tag_name": "v0.0.6",
+        "html_url": "https://github.com/NefilimPL/intrastat-generator/releases/tag/v0.0.6",
+        "assets": [
+            {
+                "name": "Intrastat-Generator_v0.0.6_Windows_x64.exe",
+                "browser_download_url": "https://example.test/app.exe",
+                "size": 123,
+            }
+        ],
+    }
+    calls: dict[str, int] = {}
+
+    def opener(request: urllib.request.Request, timeout: int = 0):
+        url = request.full_url
+        calls[url] = calls.get(url, 0) + 1
+        if url.endswith("/releases/latest"):
+            return FakeResponse(json.dumps(release_payload).encode("utf-8"))
+        if calls[url] == 1:
+            raise urllib.error.URLError("timed out")
+        return FakeResponse(json.dumps({"private": False}).encode("utf-8"))
+
+    client = GitHubReleaseClient(PROJECT, opener=opener)
+
+    result = client.check_for_update("v0.0.5-dev")
+
+    assert result.status == UpdateStatus.UPDATE_AVAILABLE
+    assert calls[client.repository_api_url] == 2
+
+
+def test_latest_update_retries_transient_latest_release_failure():
+    from intrastat_generator.updater import GitHubReleaseClient, UpdateStatus
+
+    release_payload = {
+        "tag_name": "v0.0.6",
+        "html_url": "https://github.com/NefilimPL/intrastat-generator/releases/tag/v0.0.6",
+        "assets": [
+            {
+                "name": "Intrastat-Generator_v0.0.6_Windows_x64.exe",
+                "browser_download_url": "https://example.test/app.exe",
+                "size": 123,
+            }
+        ],
+    }
+    calls: dict[str, int] = {}
+
+    def opener(request: urllib.request.Request, timeout: int = 0):
+        url = request.full_url
+        calls[url] = calls.get(url, 0) + 1
+        if url.endswith("/releases/latest") and calls[url] == 1:
+            raise urllib.error.URLError("timed out")
+        if url.endswith("/releases/latest"):
+            return FakeResponse(json.dumps(release_payload).encode("utf-8"))
+        return FakeResponse(json.dumps({"private": False}).encode("utf-8"))
+
+    client = GitHubReleaseClient(PROJECT, opener=opener)
+
+    result = client.check_for_update("v0.0.5-dev")
+
+    assert result.status == UpdateStatus.UPDATE_AVAILABLE
+    assert calls[client.latest_release_api_url] == 2
+
+
 def test_latest_update_detects_newer_public_release():
     from intrastat_generator.updater import GitHubReleaseClient, UpdateStatus
 
