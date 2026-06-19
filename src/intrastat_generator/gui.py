@@ -4,7 +4,9 @@ import os
 import queue
 import sys
 import threading
+import webbrowser
 from datetime import datetime
+from math import ceil
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple
 
@@ -26,11 +28,14 @@ except Exception:
     HAS_DND = False
 
 from .cn import HAS_RAPIDFUZZ
+from .assets import AppAssets
 from .config import DEFAULT_CONFIG, DICT_DIR_NAME, OUTPUT_DIR_NAME, VOIVODESHIPS, app_name, load_json
 from .paths import format_config_path, log_exception, resolve_path
+from .project import PROJECT
 from .service import GeneratorService
 from .text import norm_text, parse_yes_no, safe_float, yes_no
 from .transport import RouteCostManager
+from .updater import GitHubReleaseClient, RepositoryVisibility, UpdateResult, UpdateStatus
 from .version import get_version
 
 APP_NAME = app_name(get_version())
@@ -57,12 +62,24 @@ class App:
         if tk is None:
             raise RuntimeError("Tkinter nie jest dostępny w tym Pythonie.")
         self.service = GeneratorService()
+        self.assets = AppAssets(self.service.base_dir)
+        self.github_client = GitHubReleaseClient(PROJECT)
+        self.repository_visibility = RepositoryVisibility.UNKNOWN
+        self.latest_update: UpdateResult | None = None
+        self.downloaded_update_path: Path | None = None
+        self.update_button_visible = False
+        self._update_pulse_on = False
+        self._update_pulse_job: str | None = None
+        self._window_icon_image: Any = None
+        self._header_app_icon_image: Any = None
+        self._github_icon_image: Any = None
         self.route_config = self.service.load_route_cost_config()
         base_cls = TkinterDnD.Tk if HAS_DND else tk.Tk
         self.root = base_cls()
         self.root.title(APP_NAME)
         self.root.geometry("1020x700")
         self.root.minsize(900, 620)
+        self._apply_window_icon()
 
         self.msg_queue: "queue.Queue[Tuple[str, Any]]" = queue.Queue()
         self.xml_var = tk.StringVar()
@@ -84,6 +101,7 @@ class App:
         self.status_var = tk.StringVar(value="Gotowy")
         self._build_ui()
         self._refresh_tariff_years()
+        self._start_update_check()
         self.root.after(120, self._poll_queue)
 
     def _build_ui(self) -> None:
@@ -91,7 +109,7 @@ class App:
         frm = ttk.Frame(self.root, padding=12)
         frm.pack(fill="both", expand=True)
 
-        ttk.Label(frm, text=APP_NAME, font=("Segoe UI", 16, "bold")).pack(anchor="w", pady=(0, 10))
+        self._build_header(frm)
         info = "Przeciągnij XML deklaracji/Subiekta do pierwszego pola. Taryfa jest zapamiętywana w config.json. Słowniki XML są wczytywane z folderu slowniki i folderu programu."
         if not HAS_DND:
             info += "  Uwaga: przeciąganie nie działa bez tkinterdnd2 — użyj przycisków Wybierz."
@@ -170,6 +188,71 @@ class App:
         self.log(f"Drag & drop: {'TAK' if HAS_DND else 'NIE - zainstaluj tkinterdnd2'}")
         self.log(f"Fuzzy RapidFuzz: {'TAK' if HAS_RAPIDFUZZ else 'NIE - używam difflib'}")
 
+    def _build_header(self, parent: ttk.Frame) -> None:
+        header = ttk.Frame(parent)
+        header.pack(fill="x", pady=(0, 10))
+
+        self._header_app_icon_image = self._load_photo(self.assets.app_icon_png, max_size=40)
+        if self._header_app_icon_image is not None:
+            ttk.Label(header, image=self._header_app_icon_image).pack(side="left", padx=(0, 6))
+
+        self._github_icon_image = self._load_photo(self.assets.github_icon_png, max_size=24)
+        github_kwargs: dict[str, Any] = {"command": self._github_clicked, "width": 3}
+        if self._github_icon_image is not None:
+            github_kwargs["image"] = self._github_icon_image
+        else:
+            github_kwargs["text"] = "GitHub"
+            github_kwargs.pop("width", None)
+        ttk.Button(header, **github_kwargs).pack(side="left", padx=(0, 10))
+
+        ttk.Label(header, text=APP_NAME, font=("Segoe UI", 16, "bold")).pack(side="left")
+
+        self.info_btn = ttk.Button(header, text="Info", command=self._show_project_info)
+        self.info_btn.pack(side="right")
+
+        self.update_btn = tk.Button(
+            header,
+            text="Update",
+            command=self._update_clicked,
+            bg="#ef4444",
+            fg="white",
+            activebackground="#dc2626",
+            activeforeground="white",
+            relief="flat",
+            borderwidth=0,
+            padx=12,
+            pady=4,
+            cursor="hand2",
+        )
+
+    def _load_photo(self, path: Path | None, max_size: int | None = None) -> Any:
+        if path is None:
+            return None
+        try:
+            image = tk.PhotoImage(file=str(path))
+            if max_size:
+                max_dim = max(image.width(), image.height())
+                if max_dim > max_size:
+                    image = image.subsample(max(1, ceil(max_dim / max_size)), max(1, ceil(max_dim / max_size)))
+            return image
+        except Exception:
+            return None
+
+    def _apply_window_icon(self) -> None:
+        icon_ico = self.assets.app_icon_ico
+        if icon_ico is not None:
+            try:
+                self.root.iconbitmap(default=str(icon_ico))
+                return
+            except Exception:
+                pass
+        self._window_icon_image = self._load_photo(self.assets.app_icon_png, max_size=64)
+        if self._window_icon_image is not None:
+            try:
+                self.root.iconphoto(True, self._window_icon_image)
+            except Exception:
+                pass
+
     def _file_row(self, parent: ttk.LabelFrame, label: str, var: tk.StringVar, command: Callable[[], None], row: int) -> None:
         parent.columnconfigure(1, weight=1)
         ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", padx=10, pady=8)
@@ -194,6 +277,145 @@ class App:
             widget.dnd_bind("<<Drop>>", lambda event: var.set(format_gui_path(path_from_drop_data(self.root, event.data))))
         except Exception:
             pass
+
+    def _github_clicked(self) -> None:
+        if self.repository_visibility == RepositoryVisibility.PUBLIC:
+            try:
+                webbrowser.open(PROJECT.repository_url)
+                return
+            except Exception as exc:
+                messagebox.showerror(APP_NAME, f"Nie udało się otworzyć repozytorium:\n{exc}")
+                return
+        if self.repository_visibility == RepositoryVisibility.UNKNOWN:
+            message = "Status repozytorium jest jeszcze sprawdzany. Jeżeli repozytorium jest prywatne, GitHub nie pozwoli otworzyć go publicznie."
+        elif self.repository_visibility == RepositoryVisibility.PRIVATE_OR_UNAVAILABLE:
+            message = "Repozytorium jest obecnie prywatne albo niedostępne publicznie."
+        else:
+            message = "Nie udało się potwierdzić publicznej dostępności repozytorium."
+        messagebox.showinfo(APP_NAME, f"{message}\n\nAdres repozytorium:\n{PROJECT.repository_url}")
+
+    def _show_project_info(self) -> None:
+        update = self.latest_update
+        lines = [
+            f"Projekt: {PROJECT.display_name}",
+            f"Pakiet: {PROJECT.name}",
+            f"Wersja: {get_version()}",
+            f"Opis: {PROJECT.description}",
+            f"Autorzy: {PROJECT.authors}",
+            f"Licencja: {PROJECT.license}",
+            f"Repozytorium: {PROJECT.repository_url}",
+            f"Status repozytorium: {self._visibility_label(self.repository_visibility)}",
+        ]
+        if update is not None:
+            lines.append(f"Status aktualizacji: {self._update_status_label(update.status)}")
+            if update.latest_version:
+                lines.append(f"Najnowszy release: {update.latest_version}")
+            if update.release_url:
+                lines.append(f"URL release: {update.release_url}")
+            if update.asset is not None:
+                lines.append(f"Plik aktualizacji: {update.asset.name} ({self._format_size(update.asset.size)})")
+            if update.message:
+                lines.append(f"Informacja: {update.message}")
+        else:
+            lines.append("Status aktualizacji: sprawdzanie w toku albo jeszcze nie rozpoczęte")
+        if self.downloaded_update_path is not None:
+            lines.append(f"Pobrano do: {self.downloaded_update_path}")
+        messagebox.showinfo(APP_NAME, "\n".join(lines))
+
+    def _start_update_check(self) -> None:
+        thread = threading.Thread(target=self._update_check_worker, daemon=True)
+        thread.start()
+
+    def _update_check_worker(self) -> None:
+        try:
+            result = self.github_client.check_for_update(get_version())
+            self.msg_queue.put(("update_check_done", result))
+        except Exception as exc:
+            self.msg_queue.put(("update_check_error", str(exc)))
+
+    def _update_clicked(self) -> None:
+        update = self.latest_update
+        if update is None or update.status != UpdateStatus.UPDATE_AVAILABLE or update.asset is None:
+            messagebox.showinfo(APP_NAME, "Brak dostępnej aktualizacji do pobrania.")
+            return
+        self.update_btn.configure(state="disabled")
+        self.progress_var.set(0)
+        self.status_var.set("Pobieranie aktualizacji...")
+        self.log(f"Pobieranie aktualizacji: {update.asset.name}")
+        thread = threading.Thread(target=self._update_download_worker, args=(update.asset,), daemon=True)
+        thread.start()
+
+    def _update_download_worker(self, asset: Any) -> None:
+        try:
+            target_dir = self.service.base_dir / "aktualizacje"
+
+            def progress(received: int, total: int) -> None:
+                self.msg_queue.put(("update_download_progress", (received, total)))
+
+            path = self.github_client.download_asset(asset, target_dir, progress=progress)
+            self.msg_queue.put(("update_download_done", path))
+        except Exception as exc:
+            self.msg_queue.put(("update_download_error", str(exc)))
+
+    def _show_update_button(self) -> None:
+        if self.update_button_visible:
+            return
+        self.update_button_visible = True
+        self.update_btn.pack(side="right", padx=(0, 8))
+        self._pulse_update_button()
+
+    def _hide_update_button(self) -> None:
+        if not self.update_button_visible:
+            return
+        self.update_button_visible = False
+        self.update_btn.pack_forget()
+        if self._update_pulse_job is not None:
+            try:
+                self.root.after_cancel(self._update_pulse_job)
+            except Exception:
+                pass
+            self._update_pulse_job = None
+
+    def _pulse_update_button(self) -> None:
+        if not self.update_button_visible:
+            return
+        self._update_pulse_on = not self._update_pulse_on
+        color = "#ef4444" if self._update_pulse_on else "#f97316"
+        active = "#dc2626" if self._update_pulse_on else "#ea580c"
+        try:
+            self.update_btn.configure(bg=color, activebackground=active)
+        except Exception:
+            pass
+        self._update_pulse_job = self.root.after(700, self._pulse_update_button)
+
+    def _visibility_label(self, visibility: RepositoryVisibility) -> str:
+        labels = {
+            RepositoryVisibility.UNKNOWN: "nieznany",
+            RepositoryVisibility.PUBLIC: "publiczne",
+            RepositoryVisibility.PRIVATE_OR_UNAVAILABLE: "prywatne albo niedostępne publicznie",
+            RepositoryVisibility.UNAVAILABLE: "niedostępne",
+        }
+        return labels.get(visibility, visibility.value)
+
+    def _update_status_label(self, status: UpdateStatus) -> str:
+        labels = {
+            UpdateStatus.REPOSITORY_PRIVATE_OR_UNAVAILABLE: "repozytorium prywatne albo niedostępne",
+            UpdateStatus.REPOSITORY_UNAVAILABLE: "repozytorium niedostępne",
+            UpdateStatus.NO_RELEASE: "brak publicznego release",
+            UpdateStatus.NO_UPDATE: "brak nowszej wersji",
+            UpdateStatus.NO_EXE_ASSET: "nowszy release bez pliku EXE",
+            UpdateStatus.UPDATE_AVAILABLE: "dostępna nowsza wersja",
+            UpdateStatus.ERROR: "błąd sprawdzania",
+        }
+        return labels.get(status, status.value)
+
+    def _format_size(self, size: int) -> str:
+        value = float(max(0, size))
+        for unit in ["B", "KB", "MB", "GB"]:
+            if value < 1024 or unit == "GB":
+                return f"{value:.1f} {unit}" if unit != "B" else f"{int(value)} {unit}"
+            value /= 1024
+        return f"{int(size)} B"
 
     def _open_transport_cost_editor(self) -> None:
         self._save_options_to_config()
@@ -523,6 +745,54 @@ class App:
                     self.log(f"BŁĄD: {msg}")
                     self.log(f"Log błędu: {log_path}")
                     messagebox.showerror(APP_NAME, f"Błąd generowania:\n{msg}\n\nSzczegóły zapisano w:\n{log_path}")
+                elif kind == "update_check_done":
+                    result: UpdateResult = payload
+                    self.latest_update = result
+                    self.repository_visibility = result.repository_visibility
+                    if result.status == UpdateStatus.UPDATE_AVAILABLE and result.asset is not None:
+                        self.log(f"Dostępna aktualizacja {result.latest_version}: {result.asset.name}")
+                        self._show_update_button()
+                    else:
+                        if result.status in {
+                            UpdateStatus.REPOSITORY_PRIVATE_OR_UNAVAILABLE,
+                            UpdateStatus.REPOSITORY_UNAVAILABLE,
+                            UpdateStatus.ERROR,
+                        }:
+                            self.log(f"Aktualizacje GitHub pominięte: {self._update_status_label(result.status)}")
+                        self._hide_update_button()
+                elif kind == "update_check_error":
+                    self.repository_visibility = RepositoryVisibility.UNAVAILABLE
+                    self.latest_update = UpdateResult(
+                        status=UpdateStatus.ERROR,
+                        repository_visibility=RepositoryVisibility.UNAVAILABLE,
+                        message=str(payload),
+                    )
+                    self._hide_update_button()
+                    self.log(f"Nie udało się sprawdzić aktualizacji GitHub: {payload}")
+                elif kind == "update_download_progress":
+                    received, total = payload
+                    if total:
+                        percent = max(0, min(100, int(received * 100 / total)))
+                        self.progress_var.set(percent)
+                        self.status_var.set(f"Pobieranie aktualizacji: {percent}%")
+                    else:
+                        self.status_var.set(f"Pobieranie aktualizacji: {self._format_size(received)}")
+                elif kind == "update_download_done":
+                    path = Path(payload)
+                    self.downloaded_update_path = path
+                    self.update_btn.configure(state="normal")
+                    self.progress_var.set(100)
+                    self.status_var.set("Pobrano aktualizację")
+                    self.log(f"Pobrano aktualizację: {path}")
+                    messagebox.showinfo(
+                        APP_NAME,
+                        f"Pobrano aktualizację:\n{path}\n\nZamknij aktualny program przed uruchomieniem pobranego pliku EXE.",
+                    )
+                elif kind == "update_download_error":
+                    self.update_btn.configure(state="normal")
+                    self.status_var.set("Błąd pobierania aktualizacji")
+                    self.log(f"BŁĄD pobierania aktualizacji: {payload}")
+                    messagebox.showerror(APP_NAME, f"Nie udało się pobrać aktualizacji:\n{payload}")
         except queue.Empty:
             pass
         self.root.after(120, self._poll_queue)

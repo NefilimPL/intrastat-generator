@@ -117,6 +117,19 @@ def test_windows_build_jobs_validate_staged_dictionary_xml_files():
         assert "Bundled dictionary XML files were not staged" in stage_step
 
 
+def test_windows_build_jobs_stage_icon_resources_and_apply_exe_icon():
+    workflow = release_workflow_text()
+
+    for job_name in ["build-self-hosted", "build-github-hosted"]:
+        block = job_block(workflow, job_name)
+        build_step = block[block.index("- name: Build EXE") :]
+
+        assert "build/pyinstaller-resources/Icon" in block
+        assert "Icon/icon.ico" in block
+        assert "build/pyinstaller-resources/Icon;Icon" in build_step
+        assert "--icon" in build_step
+
+
 def test_windows_exe_metadata_uses_polish_language_and_project_legal_info():
     workflow = release_workflow_text()
 
