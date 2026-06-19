@@ -105,6 +105,18 @@ def test_windows_build_jobs_stage_all_resource_files_before_pyinstaller():
         assert "build/pyinstaller-resources/Taryfa;Taryfa" in build_step
 
 
+def test_windows_build_jobs_validate_staged_dictionary_xml_files():
+    workflow = release_workflow_text()
+
+    for job_name in ["build-self-hosted", "build-github-hosted"]:
+        block = job_block(workflow, job_name)
+        stage_step = block[block.index("- name: Stage bundled resources") : block.index("- name: Build EXE")]
+
+        assert "slownik*.xml" in stage_step
+        assert "stagedDictionaryFiles" in stage_step
+        assert "Bundled dictionary XML files were not staged" in stage_step
+
+
 def test_windows_exe_metadata_uses_polish_language_and_project_legal_info():
     workflow = release_workflow_text()
 

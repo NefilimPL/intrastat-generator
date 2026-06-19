@@ -189,8 +189,16 @@ jobs:
               }
             }
           }
-          foreach ($source in @("Słowniki", "Slowniki", "słowniki", "slowniki")) {
-            Copy-MissingTree -Source $source -Destination "$resourceRoot/Slowniki"
+          $dictionarySources = @(Get-ChildItem -LiteralPath . -Directory |
+            Where-Object {
+              @(Get-ChildItem -LiteralPath $_.FullName -Recurse -File -Filter "slownik*.xml" -ErrorAction SilentlyContinue).Count -gt 0
+            })
+          foreach ($source in $dictionarySources) {
+            Copy-MissingTree -Source $source.FullName -Destination "$resourceRoot/Slowniki"
+          }
+          $stagedDictionaryFiles = @(Get-ChildItem -LiteralPath "$resourceRoot/Slowniki" -Recurse -File -Filter "slownik*.xml" -ErrorAction SilentlyContinue)
+          if ($stagedDictionaryFiles.Count -eq 0) {
+            throw "Bundled dictionary XML files were not staged. Check repository dictionary folder contents before building the EXE."
           }
           foreach ($source in @("Taryfa", "taryfa")) {
             Copy-MissingTree -Source $source -Destination "$resourceRoot/Taryfa"
@@ -345,8 +353,16 @@ jobs:
               }
             }
           }
-          foreach ($source in @("Słowniki", "Slowniki", "słowniki", "slowniki")) {
-            Copy-MissingTree -Source $source -Destination "$resourceRoot/Slowniki"
+          $dictionarySources = @(Get-ChildItem -LiteralPath . -Directory |
+            Where-Object {
+              @(Get-ChildItem -LiteralPath $_.FullName -Recurse -File -Filter "slownik*.xml" -ErrorAction SilentlyContinue).Count -gt 0
+            })
+          foreach ($source in $dictionarySources) {
+            Copy-MissingTree -Source $source.FullName -Destination "$resourceRoot/Slowniki"
+          }
+          $stagedDictionaryFiles = @(Get-ChildItem -LiteralPath "$resourceRoot/Slowniki" -Recurse -File -Filter "slownik*.xml" -ErrorAction SilentlyContinue)
+          if ($stagedDictionaryFiles.Count -eq 0) {
+            throw "Bundled dictionary XML files were not staged. Check repository dictionary folder contents before building the EXE."
           }
           foreach ($source in @("Taryfa", "taryfa")) {
             Copy-MissingTree -Source $source -Destination "$resourceRoot/Taryfa"
