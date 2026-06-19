@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 import os
 import queue
 import sys
@@ -31,7 +32,7 @@ from .cn import HAS_RAPIDFUZZ
 from .assets import AppAssets
 from .config import DEFAULT_CONFIG, DICT_DIR_NAME, OUTPUT_DIR_NAME, VOIVODESHIPS, app_name, load_json
 from .paths import format_config_path, log_exception, resolve_path
-from .project import PROJECT
+from .project import PROJECT, ProjectMetadata
 from .service import GeneratorService
 from .text import norm_text, parse_yes_no, safe_float, yes_no
 from .transport import RouteCostManager
@@ -56,6 +57,80 @@ def path_from_drop_data(root: tk.Tk, data: str) -> str:  # type: ignore[name-def
     except Exception:
         pass
     return data.strip().strip("{}").strip('"')
+
+
+@dataclass(frozen=True)
+class InfoRow:
+    label: str
+    value: str
+    url: str = ""
+
+
+def visibility_label(visibility: RepositoryVisibility) -> str:
+    labels = {
+        RepositoryVisibility.UNKNOWN: "nieznany",
+        RepositoryVisibility.PUBLIC: "publiczne",
+        RepositoryVisibility.PRIVATE_OR_UNAVAILABLE: "prywatne albo niedostępne publicznie",
+        RepositoryVisibility.UNAVAILABLE: "niedostępne",
+    }
+    return labels.get(visibility, visibility.value)
+
+
+def update_status_label(status: UpdateStatus) -> str:
+    labels = {
+        UpdateStatus.REPOSITORY_PRIVATE_OR_UNAVAILABLE: "repozytorium prywatne albo niedostępne",
+        UpdateStatus.REPOSITORY_UNAVAILABLE: "repozytorium niedostępne",
+        UpdateStatus.NO_RELEASE: "brak publicznego release",
+        UpdateStatus.NO_UPDATE: "brak nowszej wersji",
+        UpdateStatus.NO_EXE_ASSET: "nowszy release bez pliku EXE",
+        UpdateStatus.UPDATE_AVAILABLE: "dostępna nowsza wersja",
+        UpdateStatus.ERROR: "błąd sprawdzania",
+    }
+    return labels.get(status, status.value)
+
+
+def format_size(size: int) -> str:
+    value = float(max(0, size))
+    for unit in ["B", "KB", "MB", "GB"]:
+        if value < 1024 or unit == "GB":
+            return f"{value:.1f} {unit}" if unit != "B" else f"{int(value)} {unit}"
+        value /= 1024
+    return f"{int(size)} B"
+
+
+def build_project_info_rows(
+    project: ProjectMetadata,
+    version: str,
+    repository_visibility: RepositoryVisibility,
+    update: UpdateResult | None,
+    downloaded_update_path: Path | None,
+) -> list[InfoRow]:
+    rows = [
+        InfoRow("Projekt", project.display_name),
+        InfoRow("Pakiet", project.name),
+        InfoRow("Wersja", version),
+        InfoRow("Opis", project.description),
+        InfoRow("Autorzy", project.authors),
+        InfoRow("Licencja", project.license),
+        InfoRow("Repozytorium", project.repository_url, project.repository_url),
+        InfoRow("Status repozytorium", visibility_label(repository_visibility)),
+    ]
+    if update is not None:
+        rows.append(InfoRow("Status aktualizacji", update_status_label(update.status)))
+        if update.latest_version:
+            rows.append(InfoRow("Najnowszy release", update.latest_version))
+        if update.release_url:
+            rows.append(InfoRow("URL release", update.release_url, update.release_url))
+        if update.asset is not None:
+            rows.append(InfoRow("Plik aktualizacji", f"{update.asset.name} ({format_size(update.asset.size)})"))
+        if update.message:
+            rows.append(InfoRow("Informacja", update.message))
+    else:
+        rows.append(InfoRow("Status aktualizacji", "sprawdzanie w toku albo jeszcze nie rozpoczęte"))
+    if downloaded_update_path is not None:
+        rows.append(InfoRow("Pobrano do", str(downloaded_update_path)))
+    return rows
+
 
 class App:
     def __init__(self):
@@ -280,47 +355,65 @@ class App:
 
     def _github_clicked(self) -> None:
         if self.repository_visibility == RepositoryVisibility.PUBLIC:
-            try:
-                webbrowser.open(PROJECT.repository_url)
-                return
-            except Exception as exc:
-                messagebox.showerror(APP_NAME, f"Nie udało się otworzyć repozytorium:\n{exc}")
-                return
+            self._open_url(PROJECT.repository_url)
+            return
         if self.repository_visibility == RepositoryVisibility.UNKNOWN:
             message = "Status repozytorium jest jeszcze sprawdzany. Jeżeli repozytorium jest prywatne, GitHub nie pozwoli otworzyć go publicznie."
         elif self.repository_visibility == RepositoryVisibility.PRIVATE_OR_UNAVAILABLE:
             message = "Repozytorium jest obecnie prywatne albo niedostępne publicznie."
         else:
             message = "Nie udało się potwierdzić publicznej dostępności repozytorium."
-        messagebox.showinfo(APP_NAME, f"{message}\n\nAdres repozytorium:\n{PROJECT.repository_url}")
+        self._show_info_rows(APP_NAME, [InfoRow("Informacja", message), InfoRow("Adres repozytorium", PROJECT.repository_url, PROJECT.repository_url)])
 
     def _show_project_info(self) -> None:
-        update = self.latest_update
-        lines = [
-            f"Projekt: {PROJECT.display_name}",
-            f"Pakiet: {PROJECT.name}",
-            f"Wersja: {get_version()}",
-            f"Opis: {PROJECT.description}",
-            f"Autorzy: {PROJECT.authors}",
-            f"Licencja: {PROJECT.license}",
-            f"Repozytorium: {PROJECT.repository_url}",
-            f"Status repozytorium: {self._visibility_label(self.repository_visibility)}",
-        ]
-        if update is not None:
-            lines.append(f"Status aktualizacji: {self._update_status_label(update.status)}")
-            if update.latest_version:
-                lines.append(f"Najnowszy release: {update.latest_version}")
-            if update.release_url:
-                lines.append(f"URL release: {update.release_url}")
-            if update.asset is not None:
-                lines.append(f"Plik aktualizacji: {update.asset.name} ({self._format_size(update.asset.size)})")
-            if update.message:
-                lines.append(f"Informacja: {update.message}")
-        else:
-            lines.append("Status aktualizacji: sprawdzanie w toku albo jeszcze nie rozpoczęte")
-        if self.downloaded_update_path is not None:
-            lines.append(f"Pobrano do: {self.downloaded_update_path}")
-        messagebox.showinfo(APP_NAME, "\n".join(lines))
+        rows = build_project_info_rows(PROJECT, get_version(), self.repository_visibility, self.latest_update, self.downloaded_update_path)
+        self._show_info_rows(APP_NAME, rows)
+
+    def _show_info_rows(self, title: str, rows: list[InfoRow]) -> None:
+        win = tk.Toplevel(self.root)
+        win.title(title)
+        win.transient(self.root)
+        win.resizable(False, False)
+
+        frame = ttk.Frame(win, padding=14)
+        frame.pack(fill="both", expand=True)
+        link_style = "Link.TLabel"
+        try:
+            ttk.Style(win).configure(link_style, foreground="#0563c1")
+        except Exception:
+            pass
+
+        for index, row in enumerate(rows):
+            ttk.Label(frame, text=f"{row.label}:").grid(row=index, column=0, sticky="ne", padx=(0, 10), pady=2)
+            if row.url:
+                value = ttk.Label(frame, text=row.value, style=link_style, cursor="hand2", wraplength=560)
+                value.bind("<Button-1>", lambda _event, url=row.url: self._open_url(url))
+                value.bind("<Return>", lambda _event, url=row.url: self._open_url(url))
+                value.bind("<space>", lambda _event, url=row.url: self._open_url(url))
+                try:
+                    value.configure(takefocus=True)
+                except Exception:
+                    pass
+            else:
+                value = ttk.Label(frame, text=row.value, wraplength=560, justify="left")
+            value.grid(row=index, column=1, sticky="w", pady=2)
+
+        buttons = ttk.Frame(frame)
+        buttons.grid(row=len(rows), column=0, columnspan=2, sticky="e", pady=(12, 0))
+        ok = ttk.Button(buttons, text="OK", command=win.destroy)
+        ok.pack(side="right")
+        win.bind("<Escape>", lambda _event: win.destroy())
+        ok.focus_set()
+        try:
+            win.grab_set()
+        except Exception:
+            pass
+
+    def _open_url(self, url: str) -> None:
+        try:
+            webbrowser.open(url)
+        except Exception as exc:
+            messagebox.showerror(APP_NAME, f"Nie udało się otworzyć adresu:\n{url}\n\n{exc}")
 
     def _start_update_check(self) -> None:
         thread = threading.Thread(target=self._update_check_worker, daemon=True)
@@ -389,33 +482,13 @@ class App:
         self._update_pulse_job = self.root.after(700, self._pulse_update_button)
 
     def _visibility_label(self, visibility: RepositoryVisibility) -> str:
-        labels = {
-            RepositoryVisibility.UNKNOWN: "nieznany",
-            RepositoryVisibility.PUBLIC: "publiczne",
-            RepositoryVisibility.PRIVATE_OR_UNAVAILABLE: "prywatne albo niedostępne publicznie",
-            RepositoryVisibility.UNAVAILABLE: "niedostępne",
-        }
-        return labels.get(visibility, visibility.value)
+        return visibility_label(visibility)
 
     def _update_status_label(self, status: UpdateStatus) -> str:
-        labels = {
-            UpdateStatus.REPOSITORY_PRIVATE_OR_UNAVAILABLE: "repozytorium prywatne albo niedostępne",
-            UpdateStatus.REPOSITORY_UNAVAILABLE: "repozytorium niedostępne",
-            UpdateStatus.NO_RELEASE: "brak publicznego release",
-            UpdateStatus.NO_UPDATE: "brak nowszej wersji",
-            UpdateStatus.NO_EXE_ASSET: "nowszy release bez pliku EXE",
-            UpdateStatus.UPDATE_AVAILABLE: "dostępna nowsza wersja",
-            UpdateStatus.ERROR: "błąd sprawdzania",
-        }
-        return labels.get(status, status.value)
+        return update_status_label(status)
 
     def _format_size(self, size: int) -> str:
-        value = float(max(0, size))
-        for unit in ["B", "KB", "MB", "GB"]:
-            if value < 1024 or unit == "GB":
-                return f"{value:.1f} {unit}" if unit != "B" else f"{int(value)} {unit}"
-            value /= 1024
-        return f"{int(size)} B"
+        return format_size(size)
 
     def _open_transport_cost_editor(self) -> None:
         self._save_options_to_config()

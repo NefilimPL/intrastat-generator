@@ -14,6 +14,7 @@ from .project import ProjectMetadata
 
 GITHUB_API_VERSION = "2022-11-28"
 DEFAULT_TIMEOUT_SECONDS = 12
+DEFAULT_API_ATTEMPTS = 2
 DOWNLOAD_CHUNK_SIZE = 1024 * 128
 
 
@@ -91,11 +92,13 @@ class GitHubReleaseClient:
         opener: Opener | None = None,
         timeout: int = DEFAULT_TIMEOUT_SECONDS,
         api_base_url: str = "https://api.github.com",
+        api_attempts: int = DEFAULT_API_ATTEMPTS,
     ):
         self.project = project
         self.opener = opener or urllib.request.urlopen
         self.timeout = timeout
         self.api_base_url = api_base_url.rstrip("/")
+        self.api_attempts = max(1, int(api_attempts))
 
     @property
     def repository_api_url(self) -> str:
@@ -228,8 +231,14 @@ class GitHubReleaseClient:
 
     def _request_json(self, url: str) -> dict[str, object]:
         request = self._request(url, accept="application/vnd.github+json")
-        with self.opener(request, timeout=self.timeout) as response:  # type: ignore[attr-defined]
-            raw = response.read()
+        for attempt in range(self.api_attempts):
+            try:
+                with self.opener(request, timeout=self.timeout) as response:  # type: ignore[attr-defined]
+                    raw = response.read()
+                break
+            except Exception as exc:
+                if attempt >= self.api_attempts - 1 or not self._is_retryable_api_error(exc):
+                    raise
         if not raw:
             return {}
         data = json.loads(raw.decode("utf-8"))
@@ -244,6 +253,11 @@ class GitHubReleaseClient:
                 "X-GitHub-Api-Version": GITHUB_API_VERSION,
             },
         )
+
+    def _is_retryable_api_error(self, exc: BaseException) -> bool:
+        if isinstance(exc, urllib.error.HTTPError):
+            return 500 <= exc.code < 600
+        return isinstance(exc, (OSError, urllib.error.URLError, TimeoutError))
 
     def _content_length(self, response: object) -> int:
         headers = getattr(response, "headers", {}) or {}
