@@ -21,6 +21,8 @@ env/
 build/
 dist/
 *.spec
+!intrastat-generator.spec
+!intrastat-generator-test.spec
 
 # Packaging metadata
 *.egg-info/
